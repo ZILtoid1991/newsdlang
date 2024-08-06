@@ -21,8 +21,47 @@ enum DLDocumentType : ubyte {
 enum DLValueType : ubyte {
     init,
     Null,
-    Integer,
-    Float,
+    Integer,    ///Generic integer type
+    Float,      ///Generic floating-point type
+    Boolean,
     String,
-    Date,
+    Date,       ///SDLang or ISO (XDL) date
+    DateTime,   ///SDLang or ISO (XDL) date and time
+    Time,       ///SDLang or ISO (XDL) time
+    Binary,     ///Base64 encoded data
+    SDLInt,
+    SDLUint,
+    SDLLong,
+    SDLUlong,
+    SDLFloat,
+    SDLDouble,
+}
+
+enum DLCommentType : ubyte {
+    init,
+    Slash,
+    Hash,
+    Asterisk,
+    Plus,
+}
+
+enum DLStringType : ubyte {
+    init,
+    Quote,
+    Apostrophe,
+    Backtick,
+    Scope,
+}
+
+enum DLTokens {
+    Base64Begin = "[",
+    Base64End = "]",
+    ScopeBegin = "{",
+    ScopeEnd = "}",
+    SingleLineComment = "//",
+    SingleLineCommentH = "#",
+    CommentBlockBegin = "/*",
+    CommentBlockEnd = "*/",
+    CommentBlockBeginS = "/+",
+    CommentBlockEndS = "+/",
 }
