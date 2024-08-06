@@ -15,7 +15,7 @@ enum DLDocumentType : ubyte {
     init,       ///Undefined/unknown
     SDL,        ///Original SDLang specs
     KDL,        ///KDL specification with its enhancements and limitations
-    XDL,        ///XDL specification (SDLang, but with better date and )
+    XDL,        ///XDL specification (SDLang, but with better specifications)
 }
 
 enum DLValueType : ubyte {
@@ -64,4 +64,5 @@ enum DLTokens {
     CommentBlockEnd = "*/",
     CommentBlockBeginS = "/+",
     CommentBlockEndS = "+/",
+    Semicolon = ";",
 }
