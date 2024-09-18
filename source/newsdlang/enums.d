@@ -53,7 +53,7 @@ enum DLStringType : ubyte {
     Scope,
 }
 
-enum DLTokens {
+package enum Tokens {
     Base64Begin = "[",
     Base64End = "]",
     ScopeBegin = "{",
@@ -64,5 +64,22 @@ enum DLTokens {
     CommentBlockEnd = "*/",
     CommentBlockBeginS = "/+",
     CommentBlockEndS = "+/",
-    Semicolon = ";",
+    EndOfTag = ";\n\r",
+    EndOfElement = " ;\t\n\r",
+    EndOfLine = "\n\r",
+    WhiteSpaces = " \t",
+    BoolTrue = "true",
+    BoolFalse = "false",
+    BoolYes = "yes",
+    BoolNo = "no",
+    Nulltype = "null",
+    StringScopeBegin = `q{"`,
+    StringScopeEnd = `"}`
+}
+
+package enum CharTokens {
+    Semicolon = ';',
+    Apostrophe = '\'',
+    Backtick = '`',
+    Quote = '"',
 }

@@ -1,12 +1,16 @@
+module newsdlang.lexer;
+
 /*
 * Originally by Lodovico Giaretta from newxml/experimental.xml
 */
 
+import std.string : indexOf;
 import std.range.primitives;
 import std.traits;
 import std.exception : enforce, assertThrown, assertNotThrown;
 public import newsdlang.exceptions;
 
+@safe:
 /++
 +   A lexer that takes a sliceable input.
 +
@@ -22,39 +26,31 @@ public import newsdlang.exceptions;
 +   Parameters:
 +       T = a sliceable type used as input for this lexer
 +/
-struct SliceLexer(T)
+struct Lexer
 {
-    package T input;
+    package string input;
     package size_t pos;
     package size_t begin;
 
-    /++
-    +   See detailed documentation in
-    +   $(LINK2 ../interfaces/isLexer, `newxml.interfaces.isLexer`)
-    +/
-    alias CharacterType = ElementEncodingType!T;
-    /// ditto
-    alias InputType = T;
-
-    //mixin UsesAllocator!Alloc;
-    //mixin UsesErrorHandler!ErrorHandler;
+    this(string input)
+    {
+        this.input = input;
+    }
 
     /// ditto
-    void setSource(T input)
+    void setSource(string input)
     {
         this.input = input;
         pos = 0;
     }
 
-    static if (isForwardRange!T)
+    auto save()
     {
-        auto save()
-        {
-            SliceLexer result = this;
-            result.input = input.save;
-            return result;
-        }
+        Lexer result = this;
+        result.input = input.save;
+        return result;
     }
+    
 
     /// Returns true if position is hit the end of the input range
     auto empty() const
@@ -68,15 +64,25 @@ struct SliceLexer(T)
         begin = pos;
     }
 
-    /// ditto
-    CharacterType[] get() const
+    /// Returns the current slice
+    string get() const
     {
         return input[begin .. pos];
     }
-
+    /// Peeks the current character.
     char peek() const
     {
         return input[pos];
+    }
+    string peek(size_t am) const
+    {
+        if (pos + am > input.length) return null;
+        return input[pos..pos + am];
+    }
+    size_t step()
+    {
+        if (!empty) pos++;
+        return pos;
     }
 
     /// ditto
@@ -101,7 +107,9 @@ struct SliceLexer(T)
         return false;
     }
 
-    /// ditto
+    /** 
+     * Advances until character character `c` is hit. If `included`, then the character will be stepped over.
+     */
     void advanceUntil(char c, bool included)
     {
         enforce!LexerException(!empty, "No more characters are found!");
@@ -125,7 +133,28 @@ struct SliceLexer(T)
             pos++;
         }
     }
-
+    /** 
+     * Advances until character sequence `s` is hit. If `included`, then the sequence will be stepped over.
+     */
+    void advanceUntil(string s, bool included)
+    {
+        enforce!LexerException(!empty, "No more characters are found!");
+        //handler();
+        for (sizediff_t i = pos ; i + s.length < input.length ; i++) 
+            {
+            if (s == input[i..i + s.length]) 
+            {
+                pos = i;
+                if (included)
+                {
+                    enforce!LexerException(!empty, "No more characters are found!");
+                    pos += s.length;
+                }
+                return;
+            }
+        }
+        pos = input.length;
+    }
     /// ditto
     size_t advanceUntilAny(string s, bool included)
     {
@@ -153,7 +182,7 @@ unittest {
         baz 8640.84
         fish 2024-09-17T20:55:43Z
     }";
-    SliceLexer!string testLexer;
+    Lexer testLexer;
     testLexer.setSource = sdlangString;
     testLexer.dropWhile(" \n\f\t");
     testLexer.start;
