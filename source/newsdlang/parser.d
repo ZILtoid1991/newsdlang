@@ -39,7 +39,8 @@ struct Parser
         }
         return result;
     }
-
+    /// Parses a string token, and returns its content unescaped as a string.
+    /// `style` indicates the style of the string.
     string parseString(DLStringType style)
     {
         string result;
@@ -70,7 +71,7 @@ struct Parser
         }
         return result;
     }
-
+    /// Parses a regular element (tag name, attribute name, numeric value, etc.).
     string parseRegularElement()
     {
         lexer.advanceUntilAny(Tokens.EndOfElement, false);
