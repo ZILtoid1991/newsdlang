@@ -93,7 +93,7 @@ struct Lexer
         return pos;
     }
 
-    /// ditto
+    /// Move forward until any of the characters are being encountered
     void dropWhile(string s)
     {
         while (pos < input.length && indexOf(s, input[pos]) != -1)
@@ -102,7 +102,7 @@ struct Lexer
         }
     }
 
-    /// ditto
+    /// Moves forward one if current char is equals with `c` and returns true, otherwise returns false
     bool testAndAdvance(char c)
     {
         enforce!LexerException(!empty, "No more characters are found!");
@@ -163,7 +163,8 @@ struct Lexer
         }
         pos = input.length;
     }
-    /// ditto
+    /// Advance forward if any of the characters in `s` is encountered.
+    /// Steps forward an extra if `included` is true.
     size_t advanceUntilAny(string s, bool included)
     {
         enforce!LexerException(!empty, "No more characters are found!");
