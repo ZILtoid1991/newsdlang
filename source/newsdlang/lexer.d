@@ -37,7 +37,7 @@ struct Lexer
         this.input = input;
     }
 
-    /// ditto
+    /// Sets the source of the lexer
     void setSource(string input)
     {
         this.input = input;
@@ -74,11 +74,19 @@ struct Lexer
     {
         return input[pos];
     }
+    /// Peeks the current position for a string of size indicated by `am`.
+    /// Returns the string, or null if string would be out of bounds.
     string peek(size_t am) const
     {
         if (pos + am > input.length) return null;
         return input[pos..pos + am];
     }
+    /// Peeks the previous character.
+    char peekBack() const
+    {
+        return input[pos - 1];
+    }
+    /// Steps one forward.
     size_t step()
     {
         if (!empty) pos++;
