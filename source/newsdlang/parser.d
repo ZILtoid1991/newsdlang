@@ -81,7 +81,10 @@ struct Parser
     }
 }
 
-
+bool isNumber(char c) @nogc nothrow
+{
+    return c >= '0' && c <= '9';
+}
 /// Removes excess whitespace in front of multiline comments
 string removeExcessWhitespace(string input) 
 {
