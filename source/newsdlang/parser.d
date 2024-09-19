@@ -7,12 +7,16 @@ import newsdlang.enums;
 struct Parser
 {
     package Lexer lexer;
-
-    void consumeWhitespace()
+    /// Forwards the lexer until whitespaces are consumed, then sets the current position as the next beginning of a token.
+    /// Returns true if lexer is empty.
+    bool consumeWhitespace()
     {
         lexer.dropWhile(Tokens.WhiteSpaces);
+        lexer.start();
+        return lexer.empty();
     }
-
+    /// Parses the comment, then returns its content as a string.
+    /// `style` indicates the style of the comment.
     string parseComment(DLCommentType style)
     {
         string result;
@@ -42,11 +46,15 @@ struct Parser
         switch (style) 
         {
         case DLStringType.Quote:
-            lexer.advanceUntil(CharTokens.Quote, false);
+            do {
+                lexer.advanceUntil(CharTokens.Quote, false);
+            } while (lexer.peekBack != '\\');
             result = lexer.get;
             break;
         case DLStringType.Apostrophe:
-            lexer.advanceUntil(CharTokens.Apostrophe, false);
+            do {
+                lexer.advanceUntil(CharTokens.Apostrophe, false);
+            } while (lexer.peekBack != '\\');
             result = lexer.get;
             break;
         case DLStringType.Backtick:
@@ -68,4 +76,9 @@ struct Parser
         lexer.advanceUntilAny(Tokens.EndOfElement, false);
         return lexer.get;
     }
+}
+/// Removes excess whitespace in front of multiline comments
+string removeExcessWhitespace(string input) {
+    string output;
+    return output;
 }
