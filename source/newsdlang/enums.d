@@ -37,6 +37,14 @@ enum DLValueType : ubyte {
     SDLDouble,
 }
 
+enum DLNumberStyle : ubyte {
+    init,
+    Hexadecimal,
+    Decimal,
+    Octal,
+    Binary,
+}
+
 enum DLCommentType : ubyte {
     init,
     Slash,
@@ -82,4 +90,5 @@ package enum CharTokens {
     Apostrophe = '\'',
     Backtick = '`',
     Quote = '"',
+    Equals = '=',
 }
