@@ -515,6 +515,45 @@ ubyte[8] detectAndParseNumericType(string input, ref long[8] parseOut) nothrow
                     {
                         isNegative = true;
                     }
+                    else if (input[i] == 'U')
+                    {   //Value might be either SDL uint or ulong
+                        if (i + 2 == input.length)
+                        {
+                            if (input[i + 1] == 'L')
+                            {
+                                result[0] = DLValueType.SDLUlong;
+                                break;
+                            }
+                            else
+                            {
+                                return [0,0,0,0,0,0,0,0];
+                            }
+                        }
+                        else if (i + 1 == input.length)
+                        {
+                            result[0] = DLValueType.SDLUint;
+                        }
+                    }
+                    else if (i + 1 == input.length)
+                    {   //Value might be SDL long, float, or double
+                        switch(input[i]){
+                        case 'L':
+                            result[0] = DLValueType.SDLLong;
+                            break;
+                        case 'd':
+                            result[0] = DLValueType.SDLDouble;
+                            break;
+                        case 'f':
+                            result[0] = DLValueType.SDLFloat;
+                            break;
+                        default:
+                            return [0,0,0,0,0,0,0,0];
+                        }
+                    }
+                    else
+                    {
+                        return [0,0,0,0,0,0,0,0];
+                    }
                 }
                 if (isNegative)
                 {
