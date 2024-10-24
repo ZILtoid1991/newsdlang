@@ -58,6 +58,14 @@ enum DLCommentType : ubyte
     Plus,
 }
 
+enum DLCommentStyle : ubyte
+{
+    init,
+    Inline,
+    LineEnd,
+    Block,
+}
+
 enum DLDateTimeType : ubyte 
 {
     init,

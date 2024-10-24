@@ -11,7 +11,7 @@ public class DLException : Exception {
 /**
  * Thrown on lexing errors.
  */
-public class LexerException : Exception
+public class LexerException : DLException
 {
     @nogc pure nothrow this(string msg, string file = __FILE__,
             size_t line = __LINE__, Throwable nextInChain = null)
@@ -21,6 +21,13 @@ public class LexerException : Exception
 
     @nogc pure nothrow this(string msg, Throwable nextInChain,
             string file = __FILE__, size_t line = __LINE__)
+    {
+        super(msg, file, line, nextInChain);
+    }
+}
+
+class ValueTypeException : DLException {
+    this(string msg, string file = __FILE__, size_t line = __LINE__, Throwable nextInChain = null) pure nothrow @nogc 
     {
         super(msg, file, line, nextInChain);
     }
