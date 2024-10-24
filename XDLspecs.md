@@ -1,5 +1,41 @@
 XDL (Extendible Declarative Language) is a declarative language built upon the SDLang (Simple Declarative Language) specification.
 
+```
+#Example tag with multiple values and attributes:
+Tag 123 456 123.456 0x01234_abcd "string" date=2024-09-19 boolean=true anotherBoolean=yes
+
+#Example anonymous tag with values only
+"string" 123 456
+
+#Example of tags having one or multiple child tags
+tag0 846 213 {
+    tag0_0 { #Example of using anonymous tags inside of a scope as a matrix
+        846 684 871
+        846 508 053
+        576 846 879
+    }
+    tag0_1 {
+        tag0_1_0 867
+        tag0_1_1 "FISH" att="サカナ" {
+            tag1_1_0
+        }
+        tag0_1_2 q{"
+            import std.stdio;
+
+            void main() {
+                writeln("Hello world!");
+            }
+        "}
+        #Example of a tag containing a BASE64 value
+        tag0_1_3 [SGVsbG8gd29ybGQh]
+    }
+}
+tag1 2024-09-19 {
+    tag1_0 .849_656
+    tag1_1 84 ; tag1_2 80
+}
+```
+
 # Main differences
 
 * Single integer type and single floating-point type only. Distinction is done via the decimal point, API provides automatic conversions from and to the target types.
@@ -33,7 +69,7 @@ Tag                     #OK
 _Tag                    #OK
 Tag123                  #OK
 Tag.Tag                 #OK
-Tag_Tag
+Tag_Tag                 #OK
 タッグ                  #OK
 ÁrvíztűrőTükörfúrógép   #OK
 true                    #Illegal, collision with keyword
@@ -72,7 +108,24 @@ ParentTag {
 }
 ```
 
-Tags can have an optional scope, which is denoted by curly braces (`{ ... }`). A scope can contain any number of tags, which may have their own children. 
+Tags can have an optional scope, which is denoted by curly braces (`{ ... }`). A scope can contain any number of tags, which may have their own children.
+
+Scopes beginning must be always on the same line as the tag declarations themselves.
+
+```s
+ParentTag 789 {         #OK
+    ...
+}
+
+ParentTag 789
+{                       #Illegal, scope beginning must be on same line
+    ...
+}
+
+{                       #Illegal, scope has no associated tag
+
+}
+```
 
 ## Values
 
@@ -115,7 +168,7 @@ Normal format is also an option.
 Hexadecimal values are also an option if the following format is used:
 
 ```
-0x123acbp4 0x1.23acbp4 0x1.23abcp-a 0x-1.23acbp4
+0x123acbp4 0x123acbp4 0x123abcp-a 0x-123acbp4
 ```
 
 For simplicity sake, all floating-point values are treated as 64 bit ones.
@@ -187,6 +240,6 @@ Simply just the word null, can be used as a placeholder
 Attributes are a name and value pair within a tag, should be used for optional things. Has the same naming rules as tags
 
 ```
-someAttribute = 860684
-namespace:name = "fish"
+someAttribute=860684
+namespace:name="fish"
 ```

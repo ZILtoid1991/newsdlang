@@ -2,7 +2,8 @@ module newsdlang.enums;
 
 @safe:
 
-enum DLElementType : ubyte {
+enum DLElementType : ubyte 
+{
     init,
     Tag,
     Document,
@@ -11,14 +12,16 @@ enum DLElementType : ubyte {
     Comment,
 }
 
-enum DLDocumentType : ubyte {
+enum DLDocumentType : ubyte 
+{
     init,       ///Undefined/unknown
     SDL,        ///Original SDLang specs
     KDL,        ///KDL specification with its enhancements and limitations
     XDL,        ///XDL specification (SDLang, but with better specifications)
 }
 
-enum DLValueType : ubyte {
+enum DLValueType : ubyte 
+{
     init,
     Null,
     Integer,    ///Generic integer type
@@ -37,7 +40,8 @@ enum DLValueType : ubyte {
     SDLDouble,
 }
 
-enum DLNumberStyle : ubyte {
+enum DLNumberStyle : ubyte 
+{
     init,
     Hexadecimal,
     Decimal,
@@ -45,7 +49,8 @@ enum DLNumberStyle : ubyte {
     Binary,
 }
 
-enum DLCommentType : ubyte {
+enum DLCommentType : ubyte 
+{
     init,
     Slash,
     Hash,
@@ -53,7 +58,22 @@ enum DLCommentType : ubyte {
     Plus,
 }
 
-enum DLStringType : ubyte {
+enum DLDateTimeType : ubyte 
+{
+    init,
+    Date,               ///YYYY-MM-DD
+    Time,               ///HH:mm:SSZ
+    DateTime,           ///YYYY-MM-DDTHH:mm:SSZ
+    DateTimeZone,       ///YYYY-MM-DDTHH:mm:SSZ-UTC
+    TimeMS,             ///HH:mm:SS.sssZ
+    DateTimeMS,         ///YYYY-MM-DDTHH:mm:SS.sssZ
+    DateTimeMSZone,     ///YYYY-MM-DDTHH:mm:SS.sssZ-UTC
+    Duration,           ///HH:mm:SS
+    DurationMS,         ///HH:mm:SS.sss
+}
+
+enum DLStringType : ubyte 
+{
     init,
     Quote,
     Apostrophe,
@@ -61,7 +81,8 @@ enum DLStringType : ubyte {
     Scope,
 }
 
-package enum Tokens {
+package enum Tokens 
+{
     Base64Begin = "[",
     Base64End = "]",
     ScopeBegin = "{",
@@ -82,13 +103,23 @@ package enum Tokens {
     BoolNo = "no",
     Nulltype = "null",
     StringScopeBegin = `q{"`,
-    StringScopeEnd = `"}`
+    StringScopeEnd = `"}`,
 }
 
-package enum CharTokens {
+package enum CharTokens 
+{
     Semicolon = ';',
+    Colon = ':',
     Apostrophe = '\'',
     Backtick = '`',
     Quote = '"',
     Equals = '=',
+    NoTimeZoneIdentifier = 'Z',
+    DateTimeSeparator = 'T',
+    Minus = '-',
+    Plus = '+',
+    HexIdentifier = 'x',
+    OctIdentifier = 'o',
+    BinIdentifier = 'b',
+    Underscore = '_',
 }
