@@ -77,6 +77,9 @@ yes                     #Illegal, collision with keyword
 false                   #Illegal, collision with keyword
 no                      #Illegal, collision with keyword
 null                    #Illegal, collision with keyword
+NaN                     #Illegal, collision with keyword
+inf+                    #Illegal, collision with keyword
+inf-                    #Illegal, collision with keyword
 ```
 
 XDL supports namespaces, and is noted by a single `:` character.
