@@ -19,6 +19,42 @@ struct DLVar
     protected Access accessor;
     protected DLValueType type;
     protected ubyte style;
+    this(T)(T val, DLValueType type, ubyte style)
+    {
+        static if (isIntegral(T))
+        {
+            accessor.i = val;
+        }
+        else static if (isFloatingPoint(T))
+        {
+            accessor.fl = val;
+        }
+        else static if (is(T == string))
+        {
+            accessor.str = val;
+        }
+        else static if (is(T == ubyte[]))
+        {
+            accessor.bin = val;
+
+        }
+        else static if (is(T == bool))
+        {
+            accessor.i = val ? 1 : 0;
+
+        }
+        else static if (is(T == SysTime))
+        {
+            accessor.time = val;
+        }
+        else static if (is(T == Duration))
+        {
+            accessor.dur = val;
+        }
+        else static assert(0, "Value type not supported directly, use serialization techniques for classes, structs, etc.!");
+        this.type = type;
+        this.style = style;
+    }
     T get(T)()
     {
         static if (isIntegral(T))
@@ -71,6 +107,7 @@ struct DLVar
                 return accessor.dur;
             }
         }
+        else static assert(0, "Value type not supported directly, use serialization techniques for classes, structs, etc.!");
         throw new ValueTypeException("Value type mismatch!");
     }
 }

@@ -81,6 +81,15 @@ struct Parser
         lexer.advanceUntilAny(Tokens.EndOfElement, false);
         return lexer.get;
     }
+    DLVar parseVariable()
+    {
+        string variableStr = parseRegularElement();
+        switch (variableStr)
+        {
+        default:
+            return DLVar.init;
+        }
+    }
 }
 
 bool isNumber(char c) @nogc nothrow pure
@@ -479,6 +488,10 @@ ubyte[8] detectAndParseNumericType(string input, ref long[8] parseOut) nothrow
                             {
                                 return [0,0,0,0,0,0,0,0];
                             }
+                        }
+                        else if (input[i] == CharTokens.Minus)
+                        {
+                            parseOut[0] *= -1;
                         }
                         else
                         { // Return all zeros if invalid
