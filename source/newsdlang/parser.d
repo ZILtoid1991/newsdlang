@@ -86,6 +86,22 @@ struct Parser
         string variableStr = parseRegularElement();
         switch (variableStr)
         {
+        case "-0.0", "-.0":
+            return DLVar(-0.0, DLValueType.Float, DLNumberStyle.Decimal);
+        case "NaN":
+            return DLVar(double.nan, DLValueType.Float, DLNumberStyle.Decimal);
+        case "inf+":
+            return DLVar(double.max, DLValueType.Float, DLNumberStyle.Decimal);
+        case "inf-":
+            return DLVar(double.min, DLValueType.Float, DLNumberStyle.Decimal);
+        case "true":
+            return DLVar(true, DLValueType.Boolean, DLBooleanStyle.TrueFalse);
+        case "false":
+            return DLVar(false, DLValueType.Boolean, DLBooleanStyle.TrueFalse);
+        case "yes":
+            return DLVar(true, DLValueType.Boolean, DLBooleanStyle.YesNo);
+        case "no":
+            return DLVar(false, DLValueType.Boolean, DLBooleanStyle.YesNo);
         default:
             return DLVar.init;
         }
