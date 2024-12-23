@@ -49,6 +49,13 @@ enum DLNumberStyle : ubyte
     Binary,
 }
 
+enum DLBooleanStyle : ubyte
+{
+    init,
+    TrueFalse,
+    YesNo,
+}
+
 enum DLCommentType : ubyte 
 {
     init,
