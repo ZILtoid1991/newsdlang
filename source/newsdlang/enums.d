@@ -47,6 +47,9 @@ enum DLNumberStyle : ubyte
     Decimal,
     Octal,
     Binary,
+    Normal,
+    FPHexadecimal,
+    FPHexNormal,
 }
 
 enum DLBooleanStyle : ubyte
@@ -110,8 +113,9 @@ package enum Tokens
     CommentBlockEndS = "+/",
     EndOfTag = ";\n\r",
     EndOfElement = " ;\t\n\r",
+    AnyElementSeparator = " ;=\t\n\r",
     EndOfLine = "\n\r",
-    WhiteSpaces = " \t",
+    WhiteSpaces = " \n\r\f\t",
     BoolTrue = "true",
     BoolFalse = "false",
     BoolYes = "yes",
@@ -121,12 +125,17 @@ package enum Tokens
     StringScopeEnd = `"}`,
 }
 
+package immutable string[] RESERVED_NAMES = [
+    "NaN", "inf+", "inf-", "true", "false", "yes", "no"
+];
+
 package enum CharTokens 
 {
     Semicolon = ';',
     Colon = ':',
     Apostrophe = '\'',
     Backtick = '`',
+    Backslash = '\\',
     Quote = '"',
     Equals = '=',
     NoTimeZoneIdentifier = 'Z',
@@ -137,4 +146,20 @@ package enum CharTokens
     OctIdentifier = 'o',
     BinIdentifier = 'b',
     Underscore = '_',
+    Base64Begin = '[',
+    Base64End = ']',
+    ScopeBegin = '{',
+    ScopeEnd = '}',
+    Hash = '#',
+}
+
+enum NextElementInLine
+{
+    init,
+    Empty,
+    TagOrAttrID,
+    Attribute,
+    Numeric,
+    String,
+    Comment,
 }
