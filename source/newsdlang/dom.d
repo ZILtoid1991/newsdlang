@@ -2,6 +2,7 @@ module newsdlang.dom;
 
 public import newsdlang.exceptions;
 public import newsdlang.enums;
+public import newsdlang.var;
 import core.stdc.stdlib;
 import std.exception : enforce;
 
@@ -161,6 +162,10 @@ public class DLTag : DLElement
     protected DLValue[] _values;
     protected DLAttribute _attributes;
     protected NamespaceAccess[] _namespaces;
+    public this(string _name, string _namespace)
+    {
+
+    }
     public NamespaceAccess namespace(string ns) nothrow
     {
         foreach (NamespaceAccess key ; _namespaces) 
@@ -184,7 +189,7 @@ public class DLAttribute : DLElement
 {
     protected string _name;
     protected string _namespace;
-    protected DLValue _value;
+    protected DLVar _value;
     /**
      * Converts element into its *DL representation with its internal and supplied 
      * formatting parameters.
@@ -203,8 +208,8 @@ public class DLAttribute : DLElement
  */
 public class DLValue : DLElement
 {
-    protected ubyte[] _data;
-    protected alias _valueType = _field1;
+    protected DLVar _data;
+    protected alias _valueType = _data.type;
     /**
      * Converts element into its *DL representation with its internal and supplied 
      * formatting parameters.
@@ -222,58 +227,7 @@ public class DLValue : DLElement
      */
     public T get(T)() @trusted
     {
-        U _derefFunc(U)() @system
-        {
-            return *cast(U*)_data.ptr;
-        }
-        /* U _safeCast(U)() @system
-        {
-            return cast(U)_data.ptr;
-        } */
-        static if (is(T == long) || is(T == int) || is(T == short) || is(T == byte)) 
-        {
-            enforce!ValueTypeException
-                    (_valueType == DLValueType.Integer || _valueType == DLValueType.SDLLong || 
-                    _valueType == DLValueType.SDLInt, "Value type mismatch!");
-            long result = _derefFunc!long;
-            return cast(T)result;
-        }
-        else static if(is(T == ulong) || is(T == uint) || is(T == ushort) || is(T == ubyte))
-        {
-            enforce!ValueTypeException
-                    (_valueType == DLValueType.Integer || _valueType == DLValueType.SDLULong || 
-                    _valueType == DLValueType.SDLUInt, "Value type mismatch!");
-            ulong result = _derefFunc!ulong;
-            return cast(T)result;
-        }
-        else static if(is(T == double))
-        {
-            enforce!ValueTypeException(_valueType == DLValueType.Float || _valueType == DLValueType.SDLDouble, 
-                    "Value type mismatch!");
-            double result = _derefFunc!double;
-            return result;
-        }
-        else static if(is(T == float))
-        {
-            enforce!ValueTypeException(_valueType == DLValueType.SDLFloat, "Value type mismatch!");
-            float result = _derefFunc!float;
-            return result;
-        }
-        else static if(is(T == ubyte[]))
-        {
-            enforce!ValueTypeException(_valueType == DLValueType.Binary, "Value type mismatch!");
-            return _data;
-        }
-        else static if(is(T == string))
-        {
-            enforce!ValueTypeException(_valueType == DLValueType.String, "Value type mismatch!");
-            return _data;
-        }
-        else static assert(0, "Unsupported type");
-    }
-    public T set(T)(T val) @trusted
-    {
-        
+        return _data.get!T();
     }
 }
 /**
