@@ -25,8 +25,25 @@ public class LexerException : DLException
         super(msg, file, line, nextInChain);
     }
 }
+/**
+ * Thrown on parsing errors.
+ */
+public class ParserException : DLException
+{
+    @nogc pure nothrow this(string msg, string file = __FILE__,
+            size_t line = __LINE__, Throwable nextInChain = null)
+    {
+        super(msg, file, line, nextInChain);
+    }
 
-class ValueTypeException : DLException {
+    @nogc pure nothrow this(string msg, Throwable nextInChain,
+            string file = __FILE__, size_t line = __LINE__)
+    {
+        super(msg, file, line, nextInChain);
+    }
+}
+
+public class ValueTypeException : DLException {
     this(string msg, string file = __FILE__, size_t line = __LINE__, Throwable nextInChain = null) pure nothrow @nogc 
     {
         super(msg, file, line, nextInChain);
