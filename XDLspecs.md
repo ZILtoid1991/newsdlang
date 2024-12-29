@@ -62,7 +62,7 @@ Block comments can be multi-line, or inlined into a tag
 
 Tags are the main building blocks of an XDL element. A tag name is consisting of any letter or number type characters of UTF-8, can also contain dots and underscores, but the first character of a tag must not be a number or a dot. Space is used for separation. Optionally a tag can also contain any number of values and attributes on the same line.
 
-```s
+```
 123tag                  #Illegal
 .Tag                    #Illegal
 Tag                     #OK
@@ -90,7 +90,7 @@ Namespace:Name
 
 Normally one tag can reside on a single line, but the semicolon (`;`) character can be used for separating multiple tags on the same line, if needed. Linebreaks are ignored inside strings and especially string scopes. A backlash (`\`) character can be used to force a tag into multiple lines.
 
-```s
+```
 Tag1; Tag2; Tag3; ...
 ```
 
@@ -115,7 +115,7 @@ Tags can have an optional scope, which is denoted by curly braces (`{ ... }`). A
 
 Scopes beginning must be always on the same line as the tag declarations themselves.
 
-```s
+```
 ParentTag 789 {         #OK
     ...
 }
