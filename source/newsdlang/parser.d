@@ -5,12 +5,32 @@ public import newsdlang.var;
 import newsdlang.enums;
 
 import std.conv : to;
+import std.algorithm;
 import std.datetime;
+import std.uni;
+import std.string;
 
 @safe:
+///Note: maybe replace it something better later on, I just can't come up with something better ATM
+package string removeAllWhitespace(string src)
+{
+    string result;
+    foreach (char c ; src)
+    {
+        if (!isWhite(c))
+        {
+            result ~= c;
+        }
+    }
+    return result;
+}
+/**
+ * Manually parses the elements of any DL document;
+ */
 struct Parser
 {
     package Lexer lexer;
+    sizediff_t scopeLevel;
     /// Forwards the lexer until whitespaces are consumed, then sets the current position as the next beginning of a token.
     /// Returns true if lexer is empty.
     bool consumeWhitespace()
@@ -31,11 +51,11 @@ struct Parser
             result = lexer.get;
             break;
         case DLCommentType.Asterisk:
-            lexer.advanceUntil(Tokens.CommentBlockEnd, false);
+            lexer.advanceUntil(Tokens.CommentBlockEnd, true);
             result = lexer.get;
             break;
         case DLCommentType.Plus:
-            lexer.advanceUntil(Tokens.CommentBlockEndS, false);
+            lexer.advanceUntil(Tokens.CommentBlockEndS, true);
             result = lexer.get;
             break;
         default:
@@ -45,44 +65,64 @@ struct Parser
     }
     /// Parses a string token, and returns its content as a string, with escaping where it's necessary.
     /// `style` indicates the style of the string.
-    string parseString(DLStringType style)
+    DLVar parseString(DLStringType style)
     {
         string result;
         switch (style) 
         {
         case DLStringType.Quote:
-            do {
+            lexer.step();
+            lexer.start();
+            lexer.advanceUntil(CharTokens.Quote, false);
+            while (lexer.peekBack == CharTokens.Backslash && !lexer.empty)
+            {
+                lexer.step();
                 lexer.advanceUntil(CharTokens.Quote, false);
-            } while (lexer.peekBack != '\\');
+            }
             result = escapeString(lexer.get);
+            lexer.step();
             break;
         case DLStringType.Apostrophe:
-            do {
-                lexer.advanceUntil(CharTokens.Apostrophe, false);
-            } while (lexer.peekBack != '\\');
+            lexer.step();
+            lexer.start();
+            lexer.advanceUntil(CharTokens.Apostrophe, false);
+            while (lexer.peekBack == CharTokens.Backslash && !lexer.empty)
+            {
+                lexer.step();
+                lexer.advanceUntil(CharTokens.Quote, false);
+            }
             result = escapeString(lexer.get);
+            lexer.step();
             break;
         case DLStringType.Backtick:
+            lexer.step();
+            lexer.start();
             lexer.advanceUntil(CharTokens.Backtick, false);
             result = lexer.get;
+            lexer.step();
             break;
         case DLStringType.Scope:
+            lexer.step();
+            lexer.step();
+            lexer.step();
             lexer.advanceUntil(Tokens.StringScopeEnd, false);
             result = lexer.get;
             break;
         default:
             break;
         }
-        return result;
+        return DLVar(result, DLValueType.String, style);
     }
     /// Parses a regular element (tag name, attribute name, numeric value, etc.).
     string parseRegularElement()
     {
-        lexer.advanceUntilAny(Tokens.EndOfElement, false);
+        lexer.advanceUntilAny(Tokens.AnyElementSeparator, false);
         return lexer.get;
     }
+    /// Parses a non-string value and returns it as a DLVar value.
     DLVar parseVariable()
     {
+        import std.math;
         string variableStr = parseRegularElement();
         switch (variableStr)
         {
@@ -91,9 +131,9 @@ struct Parser
         case "NaN":
             return DLVar(double.nan, DLValueType.Float, DLNumberStyle.Decimal);
         case "inf+":
-            return DLVar(double.max, DLValueType.Float, DLNumberStyle.Decimal);
+            return DLVar(double.infinity, DLValueType.Float, DLNumberStyle.Decimal);
         case "inf-":
-            return DLVar(double.min, DLValueType.Float, DLNumberStyle.Decimal);
+            return DLVar(double.infinity * -1.0, DLValueType.Float, DLNumberStyle.Decimal);
         case "true":
             return DLVar(true, DLValueType.Boolean, DLBooleanStyle.TrueFalse);
         case "false":
@@ -103,11 +143,403 @@ struct Parser
         case "no":
             return DLVar(false, DLValueType.Boolean, DLBooleanStyle.YesNo);
         default:
-            return DLVar.init;
+            if (variableStr[0] == CharTokens.Base64Begin)
+            {
+                if (variableStr[$-1] != CharTokens.Base64End)
+                {
+                    lexer.advanceUntil(CharTokens.Base64End, true);
+                    variableStr = lexer.get();
+                }
+                if (variableStr[$-1] != CharTokens.Base64End)
+                {
+                    throw new ParserException("Missing Base64 closing token!");
+                }
+                return DLVar(decodeBase64(removeAllWhitespace(variableStr[1..$-1])), DLValueType.Binary, 0x00);
+            }
+
+            long[8] variable;
+            ubyte[8] frmt = detectAndParseNumericType(variableStr, variable);
+            switch (frmt[0])
+            {
+            case DLValueType.Integer, DLValueType.SDLInt, DLValueType.SDLUint, DLValueType.SDLLong,
+                    DLValueType.SDLUlong:
+                return DLVar(variable[0], frmt[0], frmt[1]);
+            case DLValueType.Float, DLValueType.SDLDouble, DLValueType.SDLFloat:
+                //const double base = frmt[1] == DLNumberStyle.Hexadecimal ? 16.0 : 10.0;
+                if (frmt[1] == DLNumberStyle.Decimal)
+                {
+                    return DLVar(variable[1] + (variable[0] / pow(10.0, frmt[7])), frmt[0], frmt[1]);
+                }
+                else if (frmt[1] == DLNumberStyle.FPHexadecimal)
+                {
+                    return DLVar(variable[1] + (variable[0] / pow(16.0, frmt[7])), frmt[0], frmt[1]);
+                }
+                else
+                {
+                    ulong floatbase = frmt[6];
+                    floatbase <<= 63L;
+                    floatbase |= (variable[1] + 1022)<<52L;
+                    floatbase |= variable[0] & 0xF_FFFF_FFFF_FFFF;
+                    return DLVar(hardcastUlongToDouble(floatbase), frmt[0], frmt[1]);
+                }
+            case DLValueType.Time:
+                switch (frmt[1])
+                {
+                case DLDateTimeType.Time:
+                    return DLVar(DLDateTime.time(cast(ubyte)variable[3],cast(ubyte)variable[4],cast(ubyte)variable[5]),
+                        frmt[0], frmt[1]);
+                case DLDateTimeType.TimeMS:
+                    return DLVar(DLDateTime.time(cast(ubyte)variable[3],cast(ubyte)variable[4],cast(ubyte)variable[5],
+                        cast(ushort)variable[6]),
+                        frmt[0], frmt[1]);
+                default:
+                    throw new ParserException("Malformed element!");
+                }
+            case DLValueType.Date:
+                return DLVar(DLDateTime(cast(short)variable[0], cast(byte)variable[1], cast(byte)variable[2]),
+                        frmt[0], frmt[1]);
+            case DLValueType.DateTime:
+                switch (frmt[1])
+                {
+                case DLDateTimeType.DateTime:
+                    return DLVar(DLDateTime(cast(short)variable[0], cast(byte)variable[1], cast(byte)variable[2],
+                        cast(byte)variable[3], cast(byte)variable[4], cast(byte)variable[5]),
+                        frmt[0], frmt[1]);
+                case DLDateTimeType.DateTimeMS:
+                    return DLVar(DLDateTime(cast(short)variable[0], cast(byte)variable[1], cast(byte)variable[2],
+                        cast(byte)variable[3], cast(byte)variable[4], cast(byte)variable[5], cast(ushort)variable[6]),
+                        frmt[0], frmt[1]);
+                case DLDateTimeType.DateTimeMSZone:
+                    return DLVar(DLDateTime(cast(short)variable[0], cast(byte)variable[1], cast(byte)variable[2],
+                        cast(byte)variable[3], cast(byte)variable[4], cast(byte)variable[5], cast(ushort)variable[6],
+                        cast(short)variable[7]),
+                        frmt[0], frmt[1]);
+                case DLDateTimeType.DateTimeZone:
+                    return DLVar(DLDateTime.tz(cast(short)variable[0], cast(byte)variable[1], cast(byte)variable[2],
+                        cast(byte)variable[3], cast(byte)variable[4], cast(byte)variable[5], cast(short)variable[7]),
+                        frmt[0], frmt[1]);
+                default:
+                    throw new ParserException("Malformed element!");
+                }
+            default:
+                throw new ParserException("Malformed element!");
+            }
         }
     }
+    bool isNumericValue()
+    {
+        const char c = lexer.peek;
+        return (c >= '0' && c <= '9') || c == '-';
+    }
+    bool isClosingOfTag()
+    {
+        const char c = lexer.peek;
+        if (indexOf(";\n\r", c) != -1)
+        {
+            lexer.step();
+            return true;
+        }
+        return false;
+    }
+    ///Returns true if current parsed element is attribute, and steps over the equals sign and sets up the next element for parsing
+    bool isAttribute()
+    {
+        if (lexer.peek == CharTokens.Equals)
+        {
+            lexer.step();
+            lexer.start();
+            return true;
+        }
+        return false;
+    }
+    bool isScopeBegin()
+    {
+        if (lexer.peek == CharTokens.ScopeBegin)
+        {
+            lexer.step();
+            lexer.start();
+            scopeLevel++;
+            return true;
+        }
+        return false;
+    }
+    bool isScopeEnd()
+    {
+        if (lexer.peek == CharTokens.ScopeEnd)
+        {
+            lexer.step();
+            lexer.start();
+            scopeLevel--;
+            return true;
+        }
+        return false;
+    }
+    DLStringType isString()
+    {
+        switch (lexer.peek)
+        {
+        case CharTokens.Quote:
+            return DLStringType.Quote;
+        case CharTokens.Apostrophe:
+            return DLStringType.Apostrophe;
+        case CharTokens.Backtick:
+            return DLStringType.Backtick;
+        default:
+            if (lexer.peek(3) == Tokens.StringScopeBegin)
+            {
+                return DLStringType.Scope;
+            }
+            break;
+        }
+        return DLStringType.init;
+    }
+    DLCommentType isComment() {
+        if (lexer.peek == CharTokens.Hash)
+        {
+            return DLCommentType.Hash;
+        }
+        else if (lexer.peek(2) == Tokens.CommentBlockBeginS)
+        {
+            return DLCommentType.Plus;
+        }
+        else if (lexer.peek(2) == Tokens.CommentBlockBegin)
+        {
+            return DLCommentType.Asterisk;
+        }
+        else if (lexer.peek(2) == Tokens.SingleLineComment)
+        {
+            return DLCommentType.Slash;
+        }
+        return DLCommentType.init;
+    }
 }
+unittest {
+    import std.stdio;
+    string sdlangString = q"{
+        foo "bar" 513
+        bar `baz` 0x56_4F attr=3 {     //Comment for testing purposes
+            baz 8640.84
+        }
+        fish 2024-09-17T20:55:43Z
+        someTag "\"string\" with multiple spaces" /* Inlined comment */ 8419
+        tag1; tag2; tag3; tag4;
+    }";
+    Parser testParser;
+    testParser.lexer.setSource(sdlangString);
+    testParser.consumeWhitespace();
+    assert(!testParser.isNumericValue());
+    assert(testParser.isString() == DLStringType.init);
+    assert(testParser.isComment() == DLCommentType.init);
+    assert(testParser.parseRegularElement() == "foo");
+    testParser.consumeWhitespace();
+    assert(!testParser.isNumericValue());
+    assert(testParser.isComment() == DLCommentType.init);
+    assert(testParser.isString() == DLStringType.Quote);
+    DLVar varoutput = testParser.parseString(DLStringType.Quote);
+    assert(varoutput.get!string == "bar");
+    testParser.consumeWhitespace();
+    assert(testParser.isString() == DLStringType.init);
+    assert(testParser.isComment() == DLCommentType.init);
+    assert(testParser.isNumericValue());
+    varoutput = testParser.parseVariable();
+    assert(varoutput.get!long == 513);
+    assert(testParser.isClosingOfTag());
+    testParser.consumeWhitespace();
+    assert(testParser.isString() == DLStringType.init);
+    assert(testParser.isComment() == DLCommentType.init);
+    assert(testParser.parseRegularElement() == "bar");
+    testParser.consumeWhitespace();
+    assert(!testParser.isNumericValue());
+    assert(testParser.isComment() == DLCommentType.init);
+    assert(testParser.isString() == DLStringType.Backtick);
+    varoutput = testParser.parseString(DLStringType.Backtick);
+    assert(varoutput.get!string == "baz");
+    testParser.consumeWhitespace();
+    assert(testParser.isString() == DLStringType.init);
+    assert(testParser.isComment() == DLCommentType.init);
+    assert(testParser.isNumericValue());
+    varoutput = testParser.parseVariable();
+    assert(varoutput.get!long == 0x56_4F);
+    testParser.consumeWhitespace();
+    assert(!testParser.isNumericValue());
+    assert(testParser.isString() == DLStringType.init);
+    assert(testParser.isComment() == DLCommentType.init);
+    assert(testParser.parseRegularElement() == "attr");
+    assert(testParser.isAttribute());
+    assert(testParser.isString() == DLStringType.init);
+    assert(testParser.isComment() == DLCommentType.init);
+    assert(testParser.isNumericValue());
+    varoutput = testParser.parseVariable();
+    assert(varoutput.get!long == 3);
+    testParser.consumeWhitespace();
+    assert(testParser.isScopeBegin());
+    assert(testParser.scopeLevel == 1);
+    testParser.consumeWhitespace();
+    assert(testParser.isComment() == DLCommentType.Slash);
+    assert(testParser.parseComment(DLCommentType.Slash) == `//Comment for testing purposes`);
+    testParser.consumeWhitespace();
+    assert(!testParser.isNumericValue());
+    assert(testParser.isString() == DLStringType.init);
+    assert(testParser.isComment() == DLCommentType.init);
+    assert(testParser.parseRegularElement() == "baz");
+    testParser.consumeWhitespace();
+    assert(testParser.isString() == DLStringType.init);
+    assert(testParser.isComment() == DLCommentType.init);
+    assert(testParser.isNumericValue());
+    varoutput = testParser.parseVariable();
+    assert(varoutput.get!double == 8640.84);
+    assert(testParser.isClosingOfTag());
+    testParser.consumeWhitespace();
+    assert(testParser.isScopeEnd());
+    assert(testParser.scopeLevel == 0);
+    assert(testParser.isClosingOfTag());
+    testParser.consumeWhitespace();
+    assert(!testParser.isNumericValue());
+    assert(testParser.isString() == DLStringType.init);
+    assert(testParser.isComment() == DLCommentType.init);
+    assert(testParser.parseRegularElement() == "fish");
+    testParser.consumeWhitespace();
+    assert(testParser.isString() == DLStringType.init);
+    assert(testParser.isComment() == DLCommentType.init);
+    assert(testParser.isNumericValue());
+    DLDateTime testDateTime = testParser.parseVariable().get!DLDateTime;
+    assert(testDateTime.year == 2024 && testDateTime.month == 9 && testDateTime.day == 17 && testDateTime.hour == 20
+            && testDateTime.minute == 55 && testDateTime.second == 43);
+    assert(testParser.isClosingOfTag());
+    testParser.consumeWhitespace();
+    assert(!testParser.isNumericValue());
+    assert(testParser.isString() == DLStringType.init);
+    assert(testParser.isComment() == DLCommentType.init);
+    assert(testParser.parseRegularElement() == "someTag");
+    testParser.consumeWhitespace();
+    assert(!testParser.isNumericValue());
+    assert(testParser.isComment() == DLCommentType.init);
+    assert(testParser.isString() == DLStringType.Quote);
+    varoutput = testParser.parseString(DLStringType.Quote);
+    assert(varoutput.get!string == `"string" with multiple spaces`);
+    testParser.consumeWhitespace();
+    assert(testParser.isComment() == DLCommentType.Asterisk);
+    assert(testParser.parseComment(DLCommentType.Asterisk) == `/* Inlined comment */`);
+    testParser.consumeWhitespace();
+    assert(testParser.isString() == DLStringType.init);
+    assert(testParser.isComment() == DLCommentType.init);
+    assert(testParser.isNumericValue());
+    varoutput = testParser.parseVariable();
+    assert(varoutput.get!long == 8419);
+    assert(testParser.isClosingOfTag());
+    testParser.consumeWhitespace();
+    assert(testParser.parseRegularElement() == "tag1");
+    assert(testParser.isClosingOfTag());
+    testParser.consumeWhitespace();
+    assert(testParser.parseRegularElement() == "tag2");
+    assert(testParser.isClosingOfTag());
+    testParser.consumeWhitespace();
+    assert(testParser.parseRegularElement() == "tag3");
+    assert(testParser.isClosingOfTag());
+    testParser.consumeWhitespace();
+    assert(testParser.parseRegularElement() == "tag4");
+    assert(testParser.isClosingOfTag());
+    assert(testParser.consumeWhitespace());
+    //write(testParser.lexer.peek());
+    //
+    //assert(testParser.lexer.peek() == 'f', testParser.lexer.peek().to!string);
+}
+int base64ChrDec(char c) @nogc nothrow pure
+{
+    if (c >= 'A' && c <= 'Z')
+    {
+        return c - 'A';
+    }
+    else if (c >= 'a' && c <= 'z')
+    {
+        return (c - 'a') + 0x1a;
+    }
+    else if (c >= '0' && c <= '9')
+    {
+        return (c - '0') + 0x34;
+    }
+    else if (c == '+')
+    {
+        return 0x3E;
+    }
+    else if (c == '/')
+    {
+        return 0x3F;
+    }
+    return 0;
+}
+bool isBase64Char(char c) @nogc nothrow pure
+{
+    if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '+' || c == '/' ||
+                c == '=') return true;
+    return false;
+}
+ubyte[] decodeBase64(string src) nothrow
+{
+    ubyte[] result;
+    result.length = src.length / 4 * 3;
+    for (size_t i, j ; i < src.length ; i+=4, j+=3)
+    {
+        int byteDec0 = base64ChrDec(src[i + 0]);
+        int byteDec1 = base64ChrDec(src[i + 1]);
+        int byteDec2 = base64ChrDec(src[i + 2]);
+        int byteDec3 = base64ChrDec(src[i + 3]);
+        result[j + 0] = cast(ubyte)((byteDec0<<2) | (byteDec1>>4));
+        result[j + 1] = cast(ubyte)((byteDec1<<4) | (byteDec2>>2));
+        result[j + 2] = cast(ubyte)((byteDec2<<6) | (byteDec3>>0));
+    }
+    if (src[$ - 1] == '=')
+    {
+        if (src[$ - 2] == '=')
+        {
+            result.length -= 2;
+        }
+        else
+        {
+            result.length -= 1;
+        }
+    }
+    return result;
+}
+unittest
+{
+    import std.conv;
+    assert(base64ChrDec('A') == 0);
+    assert(base64ChrDec('D') == 3);
+    assert(base64ChrDec('F') == 5);
+    assert(base64ChrDec('T') == 19);
+    assert(base64ChrDec('W') == 22);
+    assert(base64ChrDec('a') == 26);
+    assert(base64ChrDec('q') == 42);
+    assert(base64ChrDec('u') == 46);
+    assert(base64ChrDec('0') == 52);
+    assert(base64ChrDec('9') == 61);
 
+    assert(decodeBase64("TWFu") == [0x4d,0x61,0x6e]);
+    assert(decodeBase64("TWE=") == [0x4d,0x61]);
+    assert(decodeBase64("TQ==") == [0x4d]);
+    assert(decodeBase64("bGlnaHQgd29yay4=") == "light work.");
+}
+char base64ChrEnc(ubyte b) @nogc nothrow pure
+{
+    if (b <= 25)
+    {
+        return cast(char)('A' + b);
+    }
+    else if (b <= 51)
+    {
+        return cast(char)('a' + b - 0x1a);
+    }
+    else if (b <= 61)
+    {
+        return cast(char)('0' + b - 0x34);
+    }
+    else if (b == 62)
+    {
+        return '+';
+    }
+    return '/';
+}
 bool isNumber(char c) @nogc nothrow pure
 {
     return c >= '0' && c <= '9';
@@ -473,6 +905,7 @@ ubyte[8] detectAndParseNumericType(string input, ref long[8] parseOut) nothrow
             { //Hexadecimal number
                 if (input[0] == '0') 
                 { //First digit must be zero
+                    bool isMinus;
                     result[0] = DLValueType.Integer;
                     result[1] = DLNumberStyle.Hexadecimal;
                     for (sizediff_t i = 2 ; i < input.length ; i++) 
@@ -490,11 +923,17 @@ ubyte[8] detectAndParseNumericType(string input, ref long[8] parseOut) nothrow
                             result[3] = result[2];
                             result[2] = 0;
                         }
-                        else if (input[i] == 'p')
+                        else if (input[i] == '.')
                         { // Number is hexadecimal floating point
                             if (result[0] != DLValueType.Float)
                             {
+                                if (isMinus)
+                                {
+                                    result[6] = 1;
+                                    isMinus = false;
+                                }
                                 result[0] = DLValueType.Float;
+                                result[1] = DLNumberStyle.FPHexadecimal;
                                 result[4] = result[2];
                                 result[5] = result[3];
                                 result[7] = 0;
@@ -505,14 +944,29 @@ ubyte[8] detectAndParseNumericType(string input, ref long[8] parseOut) nothrow
                                 return [0,0,0,0,0,0,0,0];
                             }
                         }
+                        else if (input[i] == 'p')
+                        { // Number is hexadecimal floating point in P notation
+
+                        }
                         else if (input[i] == CharTokens.Minus)
                         {
-                            parseOut[0] *= -1;
+                            if (!isMinus)
+                            {
+                                isMinus = true;
+                            }
+                            else
+                            {
+                                return [0,0,0,0,0,0,0,0];
+                            }
                         }
                         else
                         { // Return all zeros if invalid
                             return [0,0,0,0,0,0,0,0];
                         }
+                    }
+                    if (isMinus && result[0] == DLValueType.Float)
+                    {
+                        parseOut[0] *= -1;
                     }
                     return result;
                 }
@@ -804,7 +1258,7 @@ string encodeUTF8Char(int c) @safe nothrow
 string escapeString(string input) 
 {
     size_t i;
-    while (i < input.length) 
+    while (i + 1 < input.length)
     {
         if (input[i] == '\\') 
         {
