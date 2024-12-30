@@ -209,7 +209,7 @@ public class DLAttribute : DLElement
 public class DLValue : DLElement
 {
     protected DLVar _data;
-    protected alias _valueType = _data.type;
+    // protected alias _valueType = _data.type;
     /**
      * Converts element into its *DL representation with its internal and supplied 
      * formatting parameters.
