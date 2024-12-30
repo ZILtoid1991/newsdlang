@@ -226,18 +226,26 @@ struct Parser
             }
         }
     }
+    ///Returns true if numeric value or Base64 block begin
     bool isNumericValue()
     {
         const char c = lexer.peek;
-        return (c >= '0' && c <= '9') || c == '-';
+        return (c >= '0' && c <= '9') || c == '-' || c == '[';
     }
+    ///Returns true and steps forward one if closing of tag has been hit.
+    ///Also tests for backslash character pu
     bool isClosingOfTag()
     {
+
         const char c = lexer.peek;
         if (indexOf(";\n\r", c) != -1)
         {
             lexer.step();
             return true;
+        }
+        else if (c == CharTokens.Backslash)
+        {
+            lexer.step();
         }
         return false;
     }
@@ -252,6 +260,9 @@ struct Parser
         }
         return false;
     }
+    ///If scope begin character is found, steps the lexer forward by one, sets the new starting point, increases scope
+    ///level, and returns true.
+    ///Returns false otherwise.
     bool isScopeBegin()
     {
         if (lexer.peek == CharTokens.ScopeBegin)
@@ -263,6 +274,9 @@ struct Parser
         }
         return false;
     }
+    ///If scope end character is found, steps the lexer forward by one, sets the new starting point, decreases scope
+    ///level, and returns true.
+    ///Returns false otherwise.
     bool isScopeEnd()
     {
         if (lexer.peek == CharTokens.ScopeEnd)
@@ -274,6 +288,8 @@ struct Parser
         }
         return false;
     }
+    ///Returns the type of string if a string is found.
+    ///Returns DLStringType.init otherwise.
     DLStringType isString()
     {
         switch (lexer.peek)
@@ -293,6 +309,8 @@ struct Parser
         }
         return DLStringType.init;
     }
+    ///Returns the type of comment if a comment is found.
+    ///Returns DLCommentType.init otherwise.
     DLCommentType isComment() {
         if (lexer.peek == CharTokens.Hash)
         {
