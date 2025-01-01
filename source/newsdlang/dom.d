@@ -14,12 +14,11 @@ import std.exception : enforce;
  */
 public abstract class DLElement 
 {
-    protected DLElement[] _allChildElements;        ///Contains all child elements regardless of namespace or type.
-    protected DLElement _parent;                    ///Contains the reference to the parent element.
+    package DLElement _parent;                    ///Contains the reference to the parent element.
     protected DLElementType _type;
-    protected ubyte _field1;
-    protected ubyte _field2;
-    protected ubyte _field3;
+    package ubyte _field1;
+    package ubyte _field2;
+    package ubyte _field3;
     /**
      * Converts element into its *DL representation with its internal and supplied 
      * formatting parameters.
@@ -49,7 +48,7 @@ public abstract class DLElement
     /**
      * Returns the type of this element.
      */
-    public final DLElementType type() @nogc pure nothrow {
+    public final DLElementType type() const @nogc pure nothrow {
         return _type;
     }
     /**
@@ -157,16 +156,33 @@ public struct NamespaceAccess
  */
 public class DLTag : DLElement 
 {
+    protected DLElement[] _allChildElements;        ///Contains all child elements regardless of namespace or type.
     protected string _name;
     protected string _namespace;
     protected DLValue[] _values;
-    protected DLAttribute _attributes;
+    protected DLAttribute[] _attributes;
+    protected DLTag[] _tags;
     protected NamespaceAccess[] _namespaces;
-    public this(string _name, string _namespace)
+    public this(string _name, string _namespace, DLElement[] children)
     {
-
+        _type = DLElementType.Tag;
+        this._name = _name;
+        this._namespace = _namespace;
+        _namespaces ~= NamespaceAccess(null, null);
     }
-    public NamespaceAccess namespace(string ns) nothrow
+    public override string name() const @nogc nothrow pure
+    {
+        return _name;
+    }
+    public override string namespace() const @nogc nothrow pure
+    {
+        return _namespace;
+    }
+    public bool isAnonymous() const @nogc nothrow pure
+    {
+        return _name.length == 0 && _namespace.length == 0;
+    }
+    public NamespaceAccess accessNamespace(string ns) nothrow
     {
         foreach (NamespaceAccess key ; _namespaces) 
         {
@@ -177,10 +193,109 @@ public class DLTag : DLElement
         }
         return NamespaceAccess.init;
     }
-    /*public DLAttribute attribute(string attr)
+    /**
+     * Converts element into its *DL representation with its internal and supplied
+     * formatting parameters.
+     * Params:
+     *   indentation = the indentation characters if applicable.
+     * Returns: a UTF-8 formatted string representing the element and its children if
+     * there's any.
+     */
+    public override void toDLString(string indentation, string endOfLine, ref string output)
     {
-        
-    }*/
+
+    }
+    /**
+     * Adds the supplied element to this, returns the added element on success, returns
+     * null otherwise. Throws if child elements not supported.
+     */
+    public override DLElement add(DLElement child)
+    {
+        if (child._parent)
+        {
+            child.removeFromParent();
+        }
+        switch (child.type())
+        {
+        case DLElementType.Value:
+            insertAtLastDirectChild(child);
+            _values ~= cast(DLValue)child;
+            break;
+        case DLElementType.Attribute:
+            insertAtLastDirectChild(child);
+            _attributes ~= cast(DLAttribute)child;
+            break;
+        case DLElementType.Comment:
+            DLComment cmnt = cast(DLComment)child;
+            if (cmnt._commentStyle == DLCommentStyle.Inline || (cmnt._commentStyle == DLCommentStyle.LineEnd &&
+                !hasLineEndingComment))
+            {
+                insertAtLastDirectChild(child);
+            }
+            else
+            {
+                goto default;
+            }
+            break;
+        case DLElementType.Tag:
+            _tags ~= cast(DLTag)child;
+            goto default;
+        default:
+            _allChildElements ~= child;
+            break;
+        }
+
+        foreach (ref NamespaceAccess na ; _namespaces)
+        {
+            if (na._namespace == child.namespace)
+            {
+                na.elements ~= child;
+                return child;
+            }
+        }
+        _namespaces ~= NamespaceAccess(child.namespace, [child]);
+
+        return child;
+    }
+    package final void insertAtLastDirectChild(DLElement child) nothrow
+    {
+        const sizediff_t pos = countUntilFirstChildTag();
+        if (pos == -1)
+        {
+            _allChildElements ~= child;
+        }
+        else
+        {
+            _allChildElements = _allChildElements[0..pos] ~ child ~ _allChildElements[pos..$];
+        }
+    }
+    package final bool hasLineEndingComment() @nogc nothrow pure
+    {
+        foreach (size_t i , DLElement elem ; _allChildElements)
+        {
+            if (elem.type() == DLElementType.Comment && elem._field2 == DLCommentStyle.LineEnd)
+            {
+                return true;
+            }
+            else if (elem.type() == DLElementType.Tag)
+            {
+                return false;
+            }
+        }
+        return false;
+    }
+    package final sizediff_t countUntilFirstChildTag() @nogc nothrow pure
+    {
+        foreach (size_t i , DLElement elem ; _allChildElements)
+        {
+            if (elem.type() == DLElementType.Tag || (elem.type() == DLElementType.Comment &&
+                elem._field2 == DLCommentStyle.Block))
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
 }
 /**
  *
@@ -190,6 +305,14 @@ public class DLAttribute : DLElement
     protected string _name;
     protected string _namespace;
     protected DLVar _value;
+    public override string name() const @nogc nothrow pure
+    {
+        return _name;
+    }
+    public override string namespace() const @nogc nothrow pure
+    {
+        return _namespace;
+    }
     /**
      * Converts element into its *DL representation with its internal and supplied 
      * formatting parameters.
@@ -200,7 +323,14 @@ public class DLAttribute : DLElement
      */
     public override void toDLString(string indentation, string endOfLine, ref string output) 
     {
-        
+        if (!_namespace.length)
+        {
+            output ~= _name ~ CharTokens.Equals ~_value.toDLString();
+        }
+        else
+        {
+            output ~= _namespace ~ CharTokens.Colon ~ _name ~ CharTokens.Equals ~ _value.toDLString();
+        }
     }
 }
 /**
@@ -220,7 +350,7 @@ public class DLValue : DLElement
      */
     public override void toDLString(string indentation, string endOfLine, ref string output) 
     {
-        
+        output ~= _data.toDLString();
     }
     /** 
      * Gets type of T from value if type is matching, throws ValueTypeException if types are mismatched.
@@ -236,8 +366,8 @@ public class DLValue : DLElement
 public class DLComment : DLElement
 {
     protected string _content;
-    protected alias _commentType = _field1;
-    protected alias _commentStyle = _field2;
+    package alias _commentType = _field1;
+    package alias _commentStyle = _field2;
     /**
      * Converts element into its *DL representation with its internal and supplied 
      * formatting parameters.

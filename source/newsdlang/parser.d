@@ -25,7 +25,8 @@ package string removeAllWhitespace(string src)
     return result;
 }
 /**
- * Manually parses the elements of any DL document;
+ * Manually parses the elements of any DL document.
+ * Normally used by the DOM parser, but can be used manually if extra performance is needed.
  */
 struct Parser
 {
