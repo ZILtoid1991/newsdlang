@@ -7,6 +7,10 @@ import core.stdc.stdlib;
 import std.exception : enforce;
 
 @safe:
+public DLDocument parseDOM(string domSource)
+{
+    return null;
+}
 /**
  * The base building block of any *DL document. Implements multi-level and ambiguous 
  * type containment where it's applicable.
@@ -15,7 +19,7 @@ import std.exception : enforce;
 public abstract class DLElement 
 {
     package DLElement _parent;                    ///Contains the reference to the parent element.
-    protected DLElementType _type;
+    package DLElementType _type;
     package ubyte _field1;
     package ubyte _field2;
     package ubyte _field3;
@@ -96,7 +100,7 @@ public abstract class DLElement
     /**
      * Adds a range of *DL elements. Throws if child elements not supported.
      */
-    public void add(ElementRange)(ElementRange children)
+    public void add(DLElement[] children)
     {
         foreach (child ; children)
         {
@@ -172,6 +176,7 @@ public class DLTag : DLElement
         this._name = _name;
         this._namespace = _namespace;
         _namespaces ~= NamespaceAccess(null, null);
+        add(children);
     }
     public override string name() const @nogc nothrow pure
     {
@@ -261,6 +266,13 @@ public class DLTag : DLElement
 
         return child;
     }
+    /**
+     * Adds a range of *DL elements. Throws if child elements not supported.
+     */
+    public override void add(DLElement[] children)
+    {
+        super.add(children);
+    }
     /// Inserts element at the position of the last direct child (values, attributes,
     /// inline comments).
     package final void insertAtLastDirectChild(DLElement child) nothrow
@@ -304,6 +316,24 @@ public class DLTag : DLElement
             }
         }
         return -1;
+    }
+}
+public class DLDocument : DLTag
+{
+    public this(DLElement[] children)
+    {
+        super(null, null, children);
+        _type = DLElementType.Document;
+    }
+    ///Returns the name of the element, or null if it doesn't have any.
+    public override string name() const nothrow
+    {
+        return null;
+    }
+    ///Returns the namespace of the element, or null if it doesn't have any.
+    public override string namespace() const nothrow
+    {
+        return null;
     }
 }
 /**
@@ -350,6 +380,11 @@ public class DLValue : DLElement
 {
     protected DLVar _data;
     // protected alias _valueType = _data.type;
+    public this(DLVar data)
+    {
+        _type = DLElementType.Value;
+        _data = data;
+    }
     /**
      * Converts element into its *DL representation with its internal and supplied 
      * formatting parameters.
@@ -365,9 +400,13 @@ public class DLValue : DLElement
     /** 
      * Gets type of T from value if type is matching, throws ValueTypeException if types are mismatched.
      */
-    public T get(T)() @trusted
+    public T get(T)()
     {
         return _data.get!T();
+    }
+    public T set(T)(T val, ubyte frmt, ubyte frmt0 = 0)
+    {
+        return _data = DLVar(val, 0, frmt, frmt0);
     }
 }
 /**
