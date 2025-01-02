@@ -28,14 +28,17 @@ public abstract class DLElement
      *   output = the outputted string.
      */
     public abstract void toDLString(string indentation, string endOfLine, ref string output);
+    ///Returns the name of the element, or null if it doesn't have any.
     public string name() const nothrow
     {
         return null;
     }
+    ///Returns the namespace of the element, or null if it doesn't have any.
     public string namespace() const nothrow
     {
         return null;
     }
+    ///Returns the full name of the element.
     public string fullname() const nothrow
     {
         string ns = namespace();
@@ -152,7 +155,7 @@ public struct NamespaceAccess
     }
 }
 /**
- * 
+ * Represents a tag within a *DL document.
  */
 public class DLTag : DLElement 
 {
@@ -220,11 +223,12 @@ public class DLTag : DLElement
         case DLElementType.Value:
             insertAtLastDirectChild(child);
             _values ~= cast(DLValue)child;
-            break;
+            _allChildElements ~= child;
+            return child;
         case DLElementType.Attribute:
             insertAtLastDirectChild(child);
             _attributes ~= cast(DLAttribute)child;
-            break;
+            goto default;
         case DLElementType.Comment:
             DLComment cmnt = cast(DLComment)child;
             if (cmnt._commentStyle == DLCommentStyle.Inline || (cmnt._commentStyle == DLCommentStyle.LineEnd &&
@@ -234,9 +238,9 @@ public class DLTag : DLElement
             }
             else
             {
-                goto default;
+                _allChildElements ~= child;
             }
-            break;
+            return child;
         case DLElementType.Tag:
             _tags ~= cast(DLTag)child;
             goto default;
@@ -257,6 +261,8 @@ public class DLTag : DLElement
 
         return child;
     }
+    /// Inserts element at the position of the last direct child (values, attributes,
+    /// inline comments).
     package final void insertAtLastDirectChild(DLElement child) nothrow
     {
         const sizediff_t pos = countUntilFirstChildTag();
@@ -269,6 +275,7 @@ public class DLTag : DLElement
             _allChildElements = _allChildElements[0..pos] ~ child ~ _allChildElements[pos..$];
         }
     }
+    ///Returns true if tag already has a line ending comment.
     package final bool hasLineEndingComment() @nogc nothrow pure
     {
         foreach (size_t i , DLElement elem ; _allChildElements)
@@ -284,6 +291,8 @@ public class DLTag : DLElement
         }
         return false;
     }
+    ///Counts until the first child tag then returns its position.
+    ///Returns -1 if it doesn't have any child tags.
     package final sizediff_t countUntilFirstChildTag() @nogc nothrow pure
     {
         foreach (size_t i , DLElement elem ; _allChildElements)
@@ -298,7 +307,8 @@ public class DLTag : DLElement
     }
 }
 /**
- *
+ * Represents an attribute within a *DL document, or a name and value pair that can be
+ * assigned to a tag.
  */
 public class DLAttribute : DLElement
 {
@@ -334,7 +344,7 @@ public class DLAttribute : DLElement
     }
 }
 /**
- *
+ * Represents a value that can be assigned to a *DL tag.
  */
 public class DLValue : DLElement
 {
