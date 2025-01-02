@@ -30,34 +30,44 @@ struct DLVar
         static if (isIntegral!T)
         {
             accessor.i = val;
+            if (!type) type = DLValueType.Integer;
         }
         else static if (isFloatingPoint!T)
         {
             accessor.fl = val;
+            if (!type) type = DLValueType.Float;
         }
         else static if (is(T == string))
         {
             str = val;
+            if (!type) type = DLValueType.String;
         }
         else static if (is(T == ubyte[]))
         {
             bin = val;
-
+            if (!type) type = DLValueType.Binary;
         }
         else static if (is(T == bool))
         {
             accessor.i = val ? 1 : 0;
-
+            if (!type) type = DLValueType.Boolean;
         }
         else static if (is(T == DLDateTime))
         {
             accessor.date = val;
+            if (!type)
+            {
+                if (val.timeOnly) type = DLValueType.Time;
+                else if (val.hasTime) type = DLValueType.DateTime;
+                else type = DLValueType.Date;
+            }
         }
         // else static if (is(T == TimeOfDay))
         // {
         //     accessor.time = val;
         // }
-        else static assert(0, "Value type not supported directly, use serialization techniques for classes, structs, etc.!");
+        else static assert(0,
+                "Value type not supported directly, use serialization techniques for classes, structs, etc.!");
         this.type = type;
         this.style = style;
         this.format0 = format0;
@@ -68,7 +78,7 @@ struct DLVar
         static if (isIntegral!T)
         {
             if (type == DLValueType.Integer || type == DLValueType.SDLInt || type == DLValueType.SDLUint ||
-                    type == DLValueType.SDLLong || type == DLValueType.SDLUlong)
+                    type == DLValueType.SDLLong || type == DLValueType.SDLUlong || type == DLValueType.Null)
             {
                 return accessor.i;
             }
