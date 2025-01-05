@@ -126,8 +126,17 @@ package enum Tokens
 }
 
 package immutable string[] RESERVED_NAMES = [
-    "NaN", "inf+", "inf-", "true", "false", "yes", "no"
+    "NaN", "inf+", "inf-", "true", "false", "yes", "no", "null"
 ];
+
+public bool isReservedName(string name) @nogc nothrow pure
+{
+    foreach (string s ; RESERVED_NAMES)
+    {
+        if (s == name) return true;
+    }
+    return false;
+}
 
 package enum CharTokens 
 {

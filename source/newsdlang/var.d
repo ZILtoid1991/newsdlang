@@ -2,6 +2,7 @@ module newsdlang.var;
 
 public import newsdlang.enums;
 public import newsdlang.exceptions;
+import newsdlang.etc;
 public import std.datetime;
 import std.traits;
 import std.bitmanip;
@@ -21,45 +22,51 @@ struct DLVar
     protected string str;
     protected ubyte[] bin;
     protected Access accessor;
-    protected ubyte type;
-    protected ubyte style;
-    protected ubyte format0;
-    protected ubyte format1;
-    this(T)(T val, ubyte type, ubyte style, ubyte format0 = 0, ubyte format1 = 0) @nogc nothrow pure
+    package ubyte _type;
+    package ubyte style;
+    package ubyte format0;
+    package ubyte format1;
+    static DLVar createNull() @nogc nothrow pure
+    {
+        DLVar result;
+        result._type = DLValueType.Null;
+        return result;
+    }
+    this(T)(T val, ubyte _type, ubyte style, ubyte format0 = 0, ubyte format1 = 0) @nogc nothrow pure
     {
         static if (isIntegral!T)
         {
             accessor.i = val;
-            if (!type) type = DLValueType.Integer;
+            if (!_type) _type = DLValueType.Integer;
         }
         else static if (isFloatingPoint!T)
         {
             accessor.fl = val;
-            if (!type) type = DLValueType.Float;
+            if (!_type) _type = DLValueType.Float;
         }
         else static if (is(T == string))
         {
             str = val;
-            if (!type) type = DLValueType.String;
+            if (!_type) _type = DLValueType.String;
         }
         else static if (is(T == ubyte[]))
         {
             bin = val;
-            if (!type) type = DLValueType.Binary;
+            if (!_type) _type = DLValueType.Binary;
         }
         else static if (is(T == bool))
         {
             accessor.i = val ? 1 : 0;
-            if (!type) type = DLValueType.Boolean;
+            if (!_type) _type = DLValueType.Boolean;
         }
         else static if (is(T == DLDateTime))
         {
             accessor.date = val;
-            if (!type)
+            if (!_type)
             {
-                if (val.timeOnly) type = DLValueType.Time;
-                else if (val.hasTime) type = DLValueType.DateTime;
-                else type = DLValueType.Date;
+                if (val.timeOnly) _type = DLValueType.Time;
+                else if (val.hasTime) _type = DLValueType.DateTime;
+                else _type = DLValueType.Date;
             }
         }
         // else static if (is(T == TimeOfDay))
@@ -68,7 +75,7 @@ struct DLVar
         // }
         else static assert(0,
                 "Value type not supported directly, use serialization techniques for classes, structs, etc.!");
-        this.type = type;
+        this._type = _type;
         this.style = style;
         this.format0 = format0;
         this.format1 = format1;
@@ -77,43 +84,43 @@ struct DLVar
     {
         static if (isIntegral!T)
         {
-            if (type == DLValueType.Integer || type == DLValueType.SDLInt || type == DLValueType.SDLUint ||
-                    type == DLValueType.SDLLong || type == DLValueType.SDLUlong || type == DLValueType.Null)
+            if (_type == DLValueType.Integer || _type == DLValueType.SDLInt || _type == DLValueType.SDLUint ||
+                    _type == DLValueType.SDLLong || _type == DLValueType.SDLUlong || _type == DLValueType.Null)
             {
                 return accessor.i;
             }
         }
         else static if (isFloatingPoint!T)
         {
-            if (type == DLValueType.Float || type == DLValueType.SDLFloat || type == DLValueType.SDLDouble)
+            if (_type == DLValueType.Float || _type == DLValueType.SDLFloat || _type == DLValueType.SDLDouble)
             {
                 return accessor.fl;
             }
         }
         else static if (is(T == string))
         {
-            if (type == DLValueType.String)
+            if (_type == DLValueType.String)
             {
                 return str;
             }
         }
         else static if (is(T == ubyte[]))
         {
-            if (type == DLValueType.Binary)
+            if (_type == DLValueType.Binary)
             {
                 return bin;
             }
         }
         else static if (is(T == bool))
         {
-            if (type == DLValueType.Boolean)
+            if (_type == DLValueType.Boolean)
             {
                 return accessor.i != 0;
             }
         }
         else static if (is(T == DLDateTime))
         {
-            if (type == DLValueType.DateTime || type == DLValueType.Date)
+            if (_type == DLValueType.DateTime || _type == DLValueType.Date)
             {
                 return accessor.date;
             }
@@ -130,7 +137,7 @@ struct DLVar
     }
     string toDLString() const
     {
-        switch (type)
+        switch (_type)
         {
         case DLValueType.SDLInt:
             return format("%d", accessor.i);
@@ -191,15 +198,27 @@ struct DLVar
         case DLValueType.String:
             switch (style)
             {
-
+            case DLStringType.Backtick:
+                return CharTokens.Backtick ~ str ~ CharTokens.Backtick;
+            case DLStringType.Scope:
+                return Tokens.StringScopeBegin ~ str ~ Tokens.StringScopeEnd;
+            case DLStringType.Quote:
+                return CharTokens.Quote ~ insertEscapeChars(str) ~ CharTokens.Quote;
+            case DLStringType.Apostrophe:
+                return CharTokens.Apostrophe ~ insertEscapeChars(str) ~ CharTokens.Apostrophe;
             default:
                 break;
             }
             break;
         default:
+                return "null";
             break;
         }
         return null;
+    }
+    DLValueType type() const @nogc nothrow pure
+    {
+        return cast(DLValueType)type;
     }
 }
 /**

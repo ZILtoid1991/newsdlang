@@ -133,7 +133,7 @@ struct Parser
             return DLVar(double.nan, DLValueType.Float, DLNumberStyle.Decimal);
         case "inf+":
             return DLVar(double.infinity, DLValueType.Float, DLNumberStyle.Decimal);
-        case "inf-":
+        case "inf-", "-inf":
             return DLVar(double.infinity * -1.0, DLValueType.Float, DLNumberStyle.Decimal);
         case "true":
             return DLVar(true, DLValueType.Boolean, DLBooleanStyle.TrueFalse);
@@ -143,6 +143,8 @@ struct Parser
             return DLVar(true, DLValueType.Boolean, DLBooleanStyle.YesNo);
         case "no":
             return DLVar(false, DLValueType.Boolean, DLBooleanStyle.YesNo);
+        case "null":
+            return DLVar.createNull();
         default:
             if (variableStr[0] == CharTokens.Base64Begin)
             {
@@ -1315,6 +1317,12 @@ string escapeString(string input)
                 break;
             case 'U':
                 input = input[0..i] ~ encodeUTF8Char(input[i+2..i+10].to!int(16)) ~ input[i+10..$];
+                break;
+            case '\'':
+                input = input[0..i] ~ '\'' ~ input[i+2..$];
+                break;
+            case '\"':
+                input = input[0..i] ~ '\"' ~ input[i+2..$];
                 break;
             default:
                 input = input[0..i] ~ input[i+1..$];
