@@ -36,7 +36,15 @@ struct Parser
     /// Returns true if lexer is empty.
     bool consumeWhitespace()
     {
-        lexer.dropWhile(Tokens.WhiteSpaces);
+        lexer.dropWhile(Tokens.WhiteSpace);
+        lexer.start();
+        return lexer.empty();
+    }
+    /// Forwards the lexer until whitespaces are consumed, then sets the current position as the next beginning of a token.
+    /// Returns true if lexer is empty.
+    bool consumeAnyWhitespace()
+    {
+        lexer.dropWhile(Tokens.AnyWhiteSpace);
         lexer.start();
         return lexer.empty();
     }

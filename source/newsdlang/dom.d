@@ -136,10 +136,10 @@ public DLDocument readDOM(string domSource)
             }
             else
             {
-                if (tagName.length)
-                {
-                    throw new ParserException("Malformed *DL element or attribute!");
-                }
+                // if (tagName.length)
+                // {
+                //     throw new ParserException("Malformed *DL element or attribute!");
+                // }
                 tagName = temp;
             }
         }
@@ -410,29 +410,46 @@ public class DLTag : DLElement
             output ~= _namespace ~ CharTokens.Colon ~ _name;
         }
         sizediff_t firstTag = countUntilFirstChildTag();
-        if (_values || _attributes)
+        // if (_values || _attributes)
+        // {
+        //     const size_t target = firstTag != -1 ? firstTag : _allChildElements.length;
+        //     for (size_t i ; i < target ; i++)
+        //     {
+        //         _allChildElements[i].toDLString(indentation, endOfLine, output, indentLevel);
+        //     }
+        // }
+        // if (firstTag != -1)
+        // {
+        //     output ~= CharTokens.ScopeBegin;
+        //     output ~= endOfLine;
+        //     for (size_t i = firstTag ; i < _allChildElements.length ; i ++)
+        //     {
+        //         _allChildElements[i].toDLString(indentation, endOfLine, output, indentLevel + 1);
+        //     }
+        //     output ~= CharTokens.ScopeEnd;
+        //     output ~= endOfLine;
+        // }
+        // else
+        // {
+        //     output ~= endOfLine;
+        // }
+        size_t pos;
+        for ( ; pos < _allChildElements.length ; pos++)
         {
-            const size_t target = firstTag != -1 ? firstTag : _allChildElements.length;
-            for (size_t i ; i < target ; i++)
-            {
-                _allChildElements[i].toDLString(indentation, endOfLine, output, indentLevel);
-            }
+            if (_allChildElements[pos]._type == DLElementType.Tag) break;
+            _allChildElements[pos].toDLString(indentation, endOfLine, output, indentLevel);
         }
-        if (firstTag != -1)
+        if (pos < _allChildElements.length)
         {
             output ~= CharTokens.ScopeBegin;
             output ~= endOfLine;
-            for (size_t i = firstTag ; i < _allChildElements.length ; i ++)
+            for ( ; pos < _allChildElements.length ; pos++)
             {
-                _allChildElements[i].toDLString(indentation, endOfLine, output, indentLevel + 1);
+                _allChildElements[pos].toDLString(indentation, endOfLine, output, indentLevel + 1);
             }
             output ~= CharTokens.ScopeEnd;
-            output ~= endOfLine;
         }
-        else
-        {
-            output ~= endOfLine;
-        }
+        output ~= endOfLine;
     }
     /**
      * Adds the supplied element to this, returns the added element on success, returns
@@ -444,17 +461,18 @@ public class DLTag : DLElement
         {
             child.removeFromParent();
         }
+        child._parent = this;
         switch (child.type())
         {
         case DLElementType.Value:
             insertAtLastDirectChild(child);
             _values ~= cast(DLValue)child;
-            _allChildElements ~= child;
+            //_allChildElements ~= child;
             return child;
         case DLElementType.Attribute:
             insertAtLastDirectChild(child);
-            _attributes ~= cast(DLAttribute)child;
-            goto default;
+            //_attributes ~= cast(DLAttribute)child;
+            break;
         case DLElementType.Comment:
             DLComment cmnt = cast(DLComment)child;
             if (cmnt._commentStyle == DLCommentStyle.Inline || (cmnt._commentStyle == DLCommentStyle.LineEnd &&
@@ -648,7 +666,7 @@ public class DLAttribute : DLElement
     {
         this._type = DLElementType.Attribute;
         this._namespace = _namespace;
-        this._name = name;
+        this._name = _name;
         this._value = _value;
     }
     public override string name() const @nogc nothrow pure
@@ -753,6 +771,10 @@ public class DLValue : DLElement
     {
         output ~= ' ' ~ _data.toDLString();
     }
+    public override string toString()
+    {
+        return _data.toDLString();
+    }
     /** 
      * Gets type of T from value if type is matching, throws ValueTypeException if types are mismatched.
      */
@@ -852,3 +874,30 @@ public class DLComment : DLElement
         }
     }
 }
+
+unittest {
+    import std.stdio;
+    DLDocument doc = new DLDocument([
+        (new DLTag("foo", null, [new DLValue("bar"), new DLValue(513)])),
+        (new DLTag("bar", null, [new DLValue("baz", DLStringType.Backtick),
+            new DLValue(0x56_4F, DLNumberStyle.Hexadecimal, 2), new DLAttribute("attr", null, DLVar(3, 0 ,0))]))
+    ]);
+    writeln(doc.writeDOM());
+}
+
+unittest {
+    import std.stdio;
+    string sdlangString = q"{
+        foo "bar" 513;
+        bar `baz` 0x56_4F attr=3 {     //Comment for testing purposes
+            baz 8640.84
+        }
+    }";
+    DLDocument doc = readDOM(sdlangString);
+    assert(!doc.fullname);
+    //assert(doc.tags()[0].fullname == "foo");
+    writeln(doc.tags()[0].fullname);
+    writeln(doc.writeDOM());
+}
+
+

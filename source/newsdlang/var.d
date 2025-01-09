@@ -153,21 +153,21 @@ struct DLVar
             case DLNumberStyle.Binary:
                 if (format0)
                 {
-                    return format("%,*_b", format0, accessor.i);
+                    return format("0b%,*_b", format0, accessor.i);
                 }
-                return format("%b", accessor.i);
+                return format("0b%b", accessor.i);
             case DLNumberStyle.Octal:
                 if (format0)
                 {
-                    return format("%,*_o", format0, accessor.i);
+                    return format("0o%,*_o", format0, accessor.i);
                 }
-                return format("%o", accessor.i);
+                return format("0o%o", accessor.i);
             case DLNumberStyle.Hexadecimal:
-                if (format0)
-                {
-                    return format("%,*_X", format0, accessor.i);
-                }
-                return format("%X", accessor.i);
+                // if (format0)
+                // {
+                //     return format("0x%,*,X", format0, accessor.i);
+                // }
+                return format("0x%X", accessor.i);
             default:
                 if (format0)
                 {
