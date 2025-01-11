@@ -27,7 +27,8 @@ public DLDocument readDOM(string domSource)
     string tagName;
     void addToTopAndFlush(bool increaseScope = false)
     {
-        if (currTag.length == 1)
+        if (!currTag && !tagName) return;
+        if (currTag.length == 1 && currTag[0].type == DLElementType.Comment)
         {
             tagStack[$ - 1].add(currTag);
         }
@@ -51,6 +52,7 @@ public DLDocument readDOM(string domSource)
                 tagStack ~= t;
             }
         }
+        tagName = null;
         currTag.length = 0;
     }
     while (!domParser.consumeWhitespace())
@@ -71,7 +73,8 @@ public DLDocument readDOM(string domSource)
             switch (cmntTy)
             {
             case DLCommentType.Asterisk, DLCommentType.Plus:
-                currTag ~= new DLComment(cmnt[2..$-2], cmntTy);
+                currTag ~= new DLComment(cmnt[2..$-2], cmntTy,
+                        currTag || tagName ? DLCommentStyle.Inline : DLCommentStyle.Block);
                 break;
             case DLCommentType.Hash:
                 currTag ~= new DLComment(cmnt[1..$], cmntTy,
@@ -89,6 +92,7 @@ public DLDocument readDOM(string domSource)
         else if (domParser.isScopeBegin)
         {
             addToTopAndFlush(true);
+            domParser.consumeAnyWhitespace();
         }
         else if (domParser.isScopeEnd)
         {
@@ -102,6 +106,7 @@ public DLDocument readDOM(string domSource)
         else if (domParser.isClosingOfTag)
         {
             addToTopAndFlush();
+            domParser.consumeAnyWhitespace();
         }
         else
         {
@@ -165,6 +170,7 @@ public abstract class DLElement
      *   indentation = the indentation characters if applicable.
      *   endOfLine = endOfLine character(s).
      *   output = the outputted string.
+     *   indentLevel = current indentation level.
      */
     public abstract void toDLString(string indentation, string endOfLine, ref string output, int indentLevel);
     ///Returns the name of the element, or null if it doesn't have any.
@@ -313,22 +319,27 @@ public class DLTag : DLElement
         _namespaces ~= NamespaceAccess(null, null);
         add(children);
     }
+    /// Gives access to all of the elements of this tag, including comments.
     public DLElement[] all() @nogc nothrow pure
     {
         return _allChildElements;
     }
+    /// Gives access to the values of this tag.
     public DLValue[] values() @nogc nothrow pure
     {
         return _values;
     }
+    /// Gives access to the attributes of this tag, in the form of an array.
     public DLAttribute[] attributes() @nogc nothrow pure
     {
         return _attributes;
     }
+    /// Gives access to the child tags of this tag, in the form of an array.
     public DLTag[] tags() @nogc nothrow pure
     {
         return _tags;
     }
+    /// Looks for the attribute specified by `fullname` and returns it if found, null if not.
     public DLAttribute searchAttribute(string fullname) nothrow pure
     {
         foreach (DLAttribute a ; _attributes)
@@ -337,12 +348,14 @@ public class DLTag : DLElement
         }
         return null;
     }
+    /// Searches for the given attribute by `fullname`, returns its value, or returns defaultVal if not found.
     public T searchAttribute(T)(string fullname, T defaultVal)
     {
         DLAttribute a = searchAttribute(fullname);
         if (a) return a.get!T;
         return defaultVal;
     }
+    /// Searches for the tag by `fullname`, returns the first one if found, or returns null if not.
     public DLTag searchTag(string fullname) nothrow pure
     {
         foreach (DLTag t ; _tags)
@@ -351,6 +364,12 @@ public class DLTag : DLElement
         }
         return null;
     }
+    /**
+     * Searches for the tag specified by the path.
+     * Params:
+     *   path = The path to the tag. Each entry is a name for a given tag.
+     * Returns: The first tag by the name if found, null otherwise.
+     */
     public DLTag searchTag(string[] path) nothrow pure
     {
         DLTag t = searchTag(path[0]);
@@ -364,18 +383,42 @@ public class DLTag : DLElement
         }
         return null;
     }
+    /**
+     * Searches for the tag specified by the path. Throws an exception if not found
+     * Params:
+     *   path = The path to the tag. Each entry is a name for a given tag.
+     * Returns: The first tag by the name if found.
+     * Throws: DLDOMException if tag is not found.
+     */
+    public DLTag searchTagX(string[] path) pure
+    {
+        DLTag t = searchTag(path[0]);
+        if (t !is null)
+        {
+            if (path.length >= 1)
+            {
+                return t.searchTag(path[1..$]);
+            }
+            return t;
+        }
+        throw new DLDOMException("Tag not found!");
+    }
+    /// Returns the name of the element, or null if it doesn't have any.
     public override string name() const @nogc nothrow pure
     {
         return _name;
     }
+    /// Returns the namespace of the element, or null if it doesn't have any.
     public override string namespace() const @nogc nothrow pure
     {
         return _namespace;
     }
+    /// Return true if tag is anonymous.
     public bool isAnonymous() const @nogc nothrow pure
     {
         return _name.length == 0 && _namespace.length == 0;
     }
+    /// Gets the access to the given namespace for reading. Returns an empty namespace structure if it
     public NamespaceAccess accessNamespace(string ns) nothrow
     {
         foreach (NamespaceAccess key ; _namespaces) 
@@ -392,8 +435,9 @@ public class DLTag : DLElement
      * formatting parameters.
      * Params:
      *   indentation = the indentation characters if applicable.
-     * Returns: a UTF-8 formatted string representing the element and its children if
-     * there's any.
+     *   endOfLine = endOfLine character(s).
+     *   output = the outputted string.
+     *   indentLevel = current indentation level.
      */
     public override void toDLString(string indentation, string endOfLine, ref string output, int indentLevel)
     {
@@ -410,29 +454,7 @@ public class DLTag : DLElement
             output ~= _namespace ~ CharTokens.Colon ~ _name;
         }
         sizediff_t firstTag = countUntilFirstChildTag();
-        // if (_values || _attributes)
-        // {
-        //     const size_t target = firstTag != -1 ? firstTag : _allChildElements.length;
-        //     for (size_t i ; i < target ; i++)
-        //     {
-        //         _allChildElements[i].toDLString(indentation, endOfLine, output, indentLevel);
-        //     }
-        // }
-        // if (firstTag != -1)
-        // {
-        //     output ~= CharTokens.ScopeBegin;
-        //     output ~= endOfLine;
-        //     for (size_t i = firstTag ; i < _allChildElements.length ; i ++)
-        //     {
-        //         _allChildElements[i].toDLString(indentation, endOfLine, output, indentLevel + 1);
-        //     }
-        //     output ~= CharTokens.ScopeEnd;
-        //     output ~= endOfLine;
-        // }
-        // else
-        // {
-        //     output ~= endOfLine;
-        // }
+
         size_t pos;
         for ( ; pos < _allChildElements.length ; pos++)
         {
@@ -441,6 +463,7 @@ public class DLTag : DLElement
         }
         if (pos < _allChildElements.length)
         {
+            output ~= ' ';
             output ~= CharTokens.ScopeBegin;
             output ~= endOfLine;
             for ( ; pos < _allChildElements.length ; pos++)
@@ -512,6 +535,10 @@ public class DLTag : DLElement
     {
         super.add(children);
     }
+    /**
+     * Removes the supplied element from this, and returns it if could be removed. Returns
+     * null if it wasn't found among its children. Throws if child elements not supported.
+     */
     public override DLElement remove(DLElement child)
     {
         if (child._parent !is this)
@@ -626,6 +653,9 @@ public class DLTag : DLElement
         return -1;
     }
 }
+/**
+ * Represents a *DL document.
+ */
 public class DLDocument : DLTag
 {
     public this(DLElement[] children)
@@ -643,6 +673,13 @@ public class DLDocument : DLTag
     {
         return null;
     }
+    /**
+     * Creates a *DL document that can be used for
+     * Params:
+     *   indentation = The character string used for the indentation, default if four spaces.
+     *   endOfLine = Line ending character string used for line ending, default is carriage return-newline
+     * Returns: The textual representation of the *DL document as a string.
+     */
     public string writeDOM(string indentation = "    ", string endOfLine = "\r\n")
     {
         string result;
@@ -669,10 +706,12 @@ public class DLAttribute : DLElement
         this._name = _name;
         this._value = _value;
     }
+    ///Returns the name of the element, or null if it doesn't have any.
     public override string name() const @nogc nothrow pure
     {
         return _name;
     }
+    ///Returns the namespace of the element, or null if it doesn't have any.
     public override string namespace() const @nogc nothrow pure
     {
         return _namespace;
@@ -684,14 +723,25 @@ public class DLAttribute : DLElement
     {
         return _value.get!T();
     }
-    public DLVar get()
+    /// Returns the underlying DLVar structure
+    public DLVar get() @nogc nothrow pure
     {
         return _value;
     }
+    /**
+     * Sets the value of this element.
+     * Params:
+     *   val = The value to be set for.
+     *   frmt = First formatting field.
+     *   frmt0 = Second formatting field.
+     * Returns: The value that was set.
+     */
     public T set(T)(T val, ubyte frmt, ubyte frmt0 = 0)
     {
-        return _value = DLVar(val, 0, frmt, frmt0);
+        _value = DLVar(val, 0, frmt, frmt0);
+        return val;
     }
+    /// Sets the value of this element from a DLVar structure
     public DLVar set(DLVar val)
     {
         return _value = val;
@@ -716,6 +766,11 @@ public class DLAttribute : DLElement
             output ~= _namespace ~ CharTokens.Colon ~ _name ~ CharTokens.Equals ~ _value.toDLString();
         }
     }
+    /// Returns the type held by the attribute
+    public DLValueType type() const @nogc nothrow pure
+    {
+        return _value.type;
+    }
 }
 /**
  * Represents a value that can be assigned to a *DL tag.
@@ -723,7 +778,7 @@ public class DLAttribute : DLElement
 public class DLValue : DLElement
 {
     protected DLVar _data;
-    // protected alias _valueType = _data.type;
+
     public this(DLVar data)
     {
         _type = DLElementType.Value;
@@ -782,17 +837,33 @@ public class DLValue : DLElement
     {
         return _data.get!T();
     }
+    /// Returns the underlying DLVar structure
     public DLVar get()
     {
         return _data;
     }
+    /**
+     * Sets the value of this element.
+     * Params:
+     *   val = The value to be set for.
+     *   frmt = First formatting field.
+     *   frmt0 = Second formatting field.
+     * Returns: The value that was set.
+     */
     public T set(T)(T val, ubyte frmt, ubyte frmt0 = 0)
     {
-        return _data = DLVar(val, 0, frmt, frmt0);
+        _data = DLVar(val, 0, frmt, frmt0);
+        return val;
     }
+    /// Sets the value of this element from a DLVar structure
     public DLVar set(DLVar val)
     {
         return _data = val;
+    }
+    /// Returns the type held by the attribute
+    public DLValueType type() const @nogc nothrow pure
+    {
+        return _data.type;
     }
 }
 /**
@@ -800,7 +871,7 @@ public class DLValue : DLElement
  */
 public class DLComment : DLElement
 {
-    public string content;
+    public string content;      /// Contains the content of this element
     package alias _commentType = _field1;
     package alias _commentStyle = _field2;
     public this(string content, DLCommentType type = DLCommentType.Asterisk,
@@ -879,8 +950,11 @@ unittest {
     import std.stdio;
     DLDocument doc = new DLDocument([
         (new DLTag("foo", null, [new DLValue("bar"), new DLValue(513)])),
-        (new DLTag("bar", null, [new DLValue("baz", DLStringType.Backtick),
-            new DLValue(0x56_4F, DLNumberStyle.Hexadecimal, 2), new DLAttribute("attr", null, DLVar(3, 0 ,0))]))
+        (new DLTag("bar", null,
+            [
+            new DLValue("baz", DLStringType.Backtick), new DLValue(0x56_4F, DLNumberStyle.Hexadecimal, 2),
+            new DLAttribute("attr", null, DLVar(3, 0 ,0)), new DLTag("baz", null, [new DLValue(8640.84)])
+            ]))
     ]);
     writeln(doc.writeDOM());
 }
@@ -888,15 +962,18 @@ unittest {
 unittest {
     import std.stdio;
     string sdlangString = q"{
-        foo "bar" 513;
-        bar `baz` 0x56_4F attr=3 {     //Comment for testing purposes
-            baz 8640.84
+        foo "bar" 513
+        bar `baz` 0x56_4F attr=3 {
+            baz 8640.84             //Comment for testing purposes
         }
+        someTag "\"string\" with multiple spaces" /* Inlined comment */ 8419
     }";
     DLDocument doc = readDOM(sdlangString);
     assert(!doc.fullname);
-    //assert(doc.tags()[0].fullname == "foo");
-    writeln(doc.tags()[0].fullname);
+    assert(doc.tags()[0].fullname == "foo", doc.tags()[0].fullname);
+    assert(doc.tags()[0].values()[0].get!string == "bar");
+    assert(doc.tags()[0].values()[1].get!long == 513);
+
     writeln(doc.writeDOM());
 }
 
