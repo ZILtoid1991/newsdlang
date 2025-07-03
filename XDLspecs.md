@@ -205,6 +205,10 @@ q{"
 
 Binary data can be embedded into an XDL document using a very basic Base64 encoding, at the cost of being ~33% bigger than the original unencoded binary.
 
+```
+[SGVsbG8gd29ybGQh]
+```
+
 ### Date and Time
 
 The following date and time formats are valid:
