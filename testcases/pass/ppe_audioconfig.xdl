@@ -1,0 +1,174 @@
+module "qm816" "fmsynth" {
+	presetRecall 0 {
+		"op0_Level" 0.3030000030994415283203125
+		"op0_Attack" 15
+		"op0_Decay" 30
+		"op0_Release" 17
+		"op0_SusLevel" 0.64999997615814208984375
+		"op1_Attack" 15
+		"op1_Release" 12
+		"op0_Feedback" 0.0500000007450580596923828125
+	}
+	presetRecall 1 {
+		"chf_Algorithm" 1
+		"chf_ResMode" 1
+		"op1_TuneCor" 73
+		"op1_Waveform" 0
+		"op0_Waveform" 25
+		"op0_Level" 0.0
+	}
+	presetRecall 2 {
+		"op0_Level" 0.00999999977648258209228515625
+		"op0f_FBNeg" 1
+		"op0_Feedback" 0.07999999821186065673828125
+		"op0_SusLevel" 0.00999999977648258209228515625
+		"op0_Attack" 0
+		"op0_Decay" 50
+		"op1_Attack" 0
+		"op1_Decay" 30
+		"op1_SusLevel" 0.4000000059604644775390625
+		"op0_SusCtrl" 1
+		"op0_VelToLevel" 0.800000011920928955078125
+		"op1_SusCtrl" 62
+		"op1_VelToLevel" 0.4000000059604644775390625
+	}
+	presetRecall 3 {
+		"op0_TuneCor" 48
+		"op0_Level" 0.20000000298023223876953125
+		"op0_Release" 20
+		"op1_Release" 20
+		"op0_SusCtrl" 20
+		"op0_Feedback" 0.004999999888241291046142578125
+		"op0f_FBNeg" 1
+		"op1_SusCtrl" 20
+	}
+	presetRecall 4 {
+		"op0_Waveform" 0
+		"op0_Level" 0.008000000379979610443115234375
+		"op0_Decay" 20
+		"op0_SusCtrl" 2
+		"op0_SusLevel" 0.100000001490116119384765625
+		"op0_TuneCor" 36
+		"op1_SusCtrl" 50
+		"op0_VelToLevel" 0.20000000298023223876953125
+		"op1_VelToLevel" 0.800000011920928955078125
+	}
+	presetRecall 5 {
+		"op0_Feedback" 0.02999999932944774627685546875
+		"chf_ComboMode" 0
+		"chf_Algorithm" 1
+		"op0_Decay" 28
+		"op0_SusCtrl" 0
+		"op0_SusLevel" 0.5
+		"op1_Level" 0.5
+		"op1_SusLevel" 0.100000001490116119384765625
+		"op1_Decay" 30
+		"op1_SusCtrl" 0
+		"op0_Release" 10
+		"op1_Release" 10
+		"ch_SusLevel" 0.0
+		"ch_SusCtrl" 0
+		"ch_Decay" 30
+		"ch_EEGDetune" 12.0
+	}
+}
+module "pcm8" "sampler" {
+	loadSample "../assets/AnalogString.wav" 0
+	presetRecall 0 {
+		0x0000 0
+		0x0004 0.5
+		0x0005 0.5
+		0x0006 0.5
+		0x0007 0.5
+		0x0008 0.5
+		0x0009 0.5
+		0x000a 0.5
+		0x000b 0.0
+		0x000c 0.0
+		0x000d 0.0
+		0x000e 0.0
+		0x000f 0.0
+		0x1100 8000.0
+		0x1101 8000.0
+		0x1102 8000.0
+		0x1103 8000.0
+		0x1104 8000.0
+		0x1105 8000.0
+		0x1106 8000.0
+		0x1107 8000.0
+		0x1108 8000.0
+		0x1109 8000.0
+		0x110a 8000.0
+		0x110b 8000.0
+		0x110c 8000.0
+		0x110d 8000.0
+		0x110e 8000.0
+		0x110f 8000.0
+		0x1110 8000.0
+		0x1111 8000.0
+		0x1112 9000.0
+		0x1113 9000.0
+		0x1114 9000.0
+		0x1115 9000.0
+		0x1116 9000.0
+		0x1117 9000.0
+		0x1118 9500.0
+		0x1119 9500.0
+		0x111a 9500.0
+		0x111b 9500.0
+		0x111c 9500.0
+		0x111d 10000.0
+		0x111e 10000.0
+		0x111f 10000.0
+		0x1120 10000.0
+		0x1121 10000.0
+		0x1122 15000.0
+		0x1123 15000.0
+		0x1124 15000.0
+		0x1125 15000.0
+		0x1126 15000.0
+		0x1127 20000.0
+		0x1128 20000.0
+		0x1129 20000.0
+		0x112a 20000.0
+		0x112b 20000.0
+		0x112c 25000.0
+		0x112d 25000.0
+		0x112e 25000.0
+		0x112f 25000.0
+		0x1130 25000.0
+		0x1131 30000.0
+		0x1132 30000.0
+		0x1133 30000.0
+		0x1134 30000.0
+		0x1135 30000.0
+		0x1136 35000.0
+		0x1137 35000.0
+		0x1138 35000.0
+		0x1139 35000.0
+		0x113a 35000.0
+		0x113b 40000.0
+		0x113c 40000.0
+		0x113d 40000.0
+		0x113e 40000.0
+		0x113f 40000.0
+		0x1140 45000.0
+		0x1141 45000.0
+		0x1142 45000.0
+		0x1143 45000.0
+		0x1144 45000.0
+		0x1145 50000.0
+		0x1146 50000.0
+		0x1147 50000.0
+		0x1148 50000.0
+		0x1149 50000.0
+		0x114a 55000.0
+		0x114b 55000.0
+		0x114c 55000.0
+		0x114d 55000.0
+	}
+}
+route "fmsynth:mainL" "outputL"
+route "fmsynth:mainR" "outputR"
+route "sampler:mainL" "outputL"
+route "sampler:mainR" "outputR"
