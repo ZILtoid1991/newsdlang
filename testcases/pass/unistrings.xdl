@@ -1,0 +1,9 @@
+magyar "árvíztűrő tükörfúrógép ÁRVÍZTŰRŐ TÜKÖRFÚRÓGÉP"
+日本語 "こにちわ世界"
+delimiterString q"{
+    import std.stdio;
+
+    void main() {
+        writeln("Helló világ!");
+    }
+}"
