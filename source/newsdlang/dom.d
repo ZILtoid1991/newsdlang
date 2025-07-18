@@ -978,3 +978,17 @@ unittest {
 }
 
 
+unittest {
+    string sdlangString = q"{
+        magyar "árvíztűrő tükörfúrógép ÁRVÍZTŰRŐ TÜKÖRFÚRÓGÉP"
+        日本語 "こにちわ世界"
+        delimiterString q"{
+            import std.stdio;
+
+            void main() {
+                writeln("Helló világ!");
+            }
+        }"
+    }";
+    DLDocument doc = readDOM(sdlangString);
+}

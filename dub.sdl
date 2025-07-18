@@ -1,11 +1,12 @@
 name "newsdlang"
-description "An SDL/KDL/XDL parser for D"
+description "An SDLang/XDL parser for D"
 authors "laszl"
 copyright "Copyright © 2024, laszl"
 license "BSL-1.0"
 
-subpackage "test" {
+subPackage {
+    name "test"
     dependency "newsdlang" version="*"
-    sourcePaths "/testsource/"
+    sourcePaths "./testsource/"
     targetType "executable"
 }

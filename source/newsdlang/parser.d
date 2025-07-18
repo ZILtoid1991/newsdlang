@@ -116,6 +116,8 @@ struct Parser
             lexer.step();
             lexer.advanceUntil(Tokens.StringScopeEnd, false);
             result = lexer.get;
+            lexer.step();
+            lexer.step();
             break;
         default:
             break;
@@ -352,6 +354,10 @@ unittest {
         fish 2024-09-17T20:55:43Z
         someTag "\"string\" with multiple spaces" /* Inlined comment */ 8419
         tag1; tag2; tag3; tag4;
+        tag q"{
+            delimiter string
+        }"
+        tag
     }";
     Parser testParser;
     testParser.lexer.setSource(sdlangString);
@@ -468,7 +474,12 @@ unittest {
     testParser.consumeAnyWhitespace();
     assert(testParser.parseRegularElement() == "tag4");
     assert(testParser.isClosingOfTag());
-    assert(testParser.consumeAnyWhitespace());
+    testParser.consumeAnyWhitespace();
+    assert(testParser.parseRegularElement() == "tag");
+    testParser.consumeWhitespace();
+    assert(testParser.isString() == DLStringType.Scope);
+    // writeln(testParser.parseString(DLStringType.Scope));
+
     //write(testParser.lexer.peek());
     //
     //assert(testParser.lexer.peek() == 'f', testParser.lexer.peek().to!string);

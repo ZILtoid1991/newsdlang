@@ -122,8 +122,8 @@ package enum Tokens
     BoolYes = "yes",
     BoolNo = "no",
     Nulltype = "null",
-    StringScopeBegin = `q{"`,
-    StringScopeEnd = `"}`,
+    StringScopeBegin = `q"{`,
+    StringScopeEnd = `}"`,
 }
 
 package immutable string[] RESERVED_NAMES = [
