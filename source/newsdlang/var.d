@@ -9,7 +9,9 @@ import std.bitmanip;
 import std.format;
 
 @safe:
-
+/**
+ * Implements a safe way to handle the accessing of data types held in a *DL variable.
+ */
 struct DLVar
 {
     package union Access
@@ -26,12 +28,23 @@ struct DLVar
     package ubyte style;
     package ubyte format0;
     package ubyte format1;
+    /// Creates a DLVar that simply holds a "null" value.
     static DLVar createNull() @nogc nothrow pure
     {
         DLVar result;
         result._type = DLValueType.Null;
         return result;
     }
+    /**
+     * Creates a DLVar with the given parameters.
+     * Params:
+     *   val = The value to be held by the struct.
+     *   _type = the type of the value, or zero for autodetect.
+     *   style = the style to be used for the given value (hexadecimal numbers, 
+     * quote/escape styles, etc.)
+     *   format0 = integer part underscores, zero otherwise.
+     *   format1 = fraction part underscores, zero otherwise.
+     */
     this(T)(T val, ubyte _type, ubyte style, ubyte format0 = 0, ubyte format1 = 0) @nogc nothrow pure
     {
         static if (isIntegral!T)
@@ -80,6 +93,8 @@ struct DLVar
         this.format0 = format0;
         this.format1 = format1;
     }
+    /// Returns the value held by this DLVar as given type if possible, throws 
+    /// `ValueTypeException` if type is mismatched.
     T get(T)()
     {
         static if (isIntegral!T)
@@ -135,6 +150,7 @@ struct DLVar
         else static assert(0, "Value type not supported directly, use serialization techniques for classes, structs, etc.!");
         throw new ValueTypeException("Value type mismatch!");
     }
+    /// Converts data to *DL string.
     string toDLString() const
     {
         switch (_type)
@@ -216,6 +232,7 @@ struct DLVar
         }
         return null;
     }
+    /// Returns the typeID of this DLVar value.
     DLValueType type() const @nogc nothrow pure
     {
         return cast(DLValueType)type;
