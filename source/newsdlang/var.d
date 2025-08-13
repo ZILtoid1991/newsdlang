@@ -87,14 +87,14 @@ struct DLVar
             if (_type == DLValueType.Integer || _type == DLValueType.SDLInt || _type == DLValueType.SDLUint ||
                     _type == DLValueType.SDLLong || _type == DLValueType.SDLUlong || _type == DLValueType.Null)
             {
-                return accessor.i;
+                return cast(T)accessor.i;
             }
         }
         else static if (isFloatingPoint!T)
         {
             if (_type == DLValueType.Float || _type == DLValueType.SDLFloat || _type == DLValueType.SDLDouble)
             {
-                return accessor.fl;
+                return cast(T)accessor.fl;
             }
         }
         else static if (is(T == string))
