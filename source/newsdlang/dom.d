@@ -706,6 +706,48 @@ public class DLAttribute : DLElement
         this._name = _name;
         this._value = _value;
     }
+    public this(string _name, string _namespace, long data, DLNumberStyle style = DLNumberStyle.Decimal, ubyte numberingFrmt = 0)
+    {
+        this._type = DLElementType.Attribute;
+        this._namespace = _namespace;
+        this._name = _name;
+        this._value = DLVar(data, DLValueType.Integer, style, numberingFrmt, numberingFrmt);
+    }
+    public this(string _name, string _namespace, double data, DLNumberStyle style = DLNumberStyle.Decimal, ubyte numberingFrmt = 0)
+    {
+        this._type = DLElementType.Attribute;
+        this._namespace = _namespace;
+        this._name = _name;
+        this._value = DLVar(data, DLValueType.Float, style, numberingFrmt, numberingFrmt);
+    }
+    public this(string _name, string _namespace, string data, DLStringType style = DLStringType.Quote)
+    {
+        this._type = DLElementType.Attribute;
+        this._namespace = _namespace;
+        this._name = _name;
+        this._value = DLVar(data, DLValueType.String, style);
+    }
+    public this(string _name, string _namespace, bool data, DLBooleanStyle style = DLBooleanStyle.TrueFalse)
+    {
+        this._type = DLElementType.Attribute;
+        this._namespace = _namespace;
+        this._name = _name;
+        this._value = DLVar(data, DLValueType.Boolean, style);
+    }
+    public this(string _name, string _namespace, ubyte[] data)
+    {
+        this._type = DLElementType.Attribute;
+        this._namespace = _namespace;
+        this._name = _name;
+        this._value = DLVar(data, DLValueType.Binary, 0);
+    }
+    public this(string _name, string _namespace, DLDateTime data)
+    {
+        this._type = DLElementType.Attribute;
+        this._namespace = _namespace;
+        this._name = _name;
+        this._value = DLVar(data, 0, 0);
+    }
     ///Returns the name of the element, or null if it doesn't have any.
     public override string name() const @nogc nothrow pure
     {
