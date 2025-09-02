@@ -232,6 +232,30 @@ struct DLVar
         }
         return null;
     }
+    bool opEquals(DLVar rhs) @safe @nogc pure nothrow const
+    {
+        if (this._type != rhs.type) return false;
+        final switch (_type) with (DLValueType)
+        {
+            case init: return false;
+            case Null: return true;
+            case SDLInt:
+            case SDLUint:
+            case SDLLong:
+            case SDLUlong:
+            case Boolean:
+            case Integer: return accessor.i == rhs.accessor.i;
+            case SDLFloat:
+            case SDLDouble:
+            case Float: return accessor.fl == rhs.accessor.fl;
+            case String: return str == rhs.str;
+            case Date:
+            case DateTime:
+            case Time:
+            case Binary: return bin == rhs.bin;
+
+        }
+    }
     /// Returns the typeID of this DLVar value.
     DLValueType type() const @nogc nothrow pure
     {
