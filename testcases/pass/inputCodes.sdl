@@ -1,0 +1,34 @@
+/*
+ * PixelPerfectEngine
+ *
+ * Default XInput axis and button namings by Laszlo Szeremi
+ * (c) 2017-2020 under Boost license
+ */
+
+
+axis {
+    "leftXAxis" 1
+    "leftYAxis" 2
+    "rightXAxis" 3
+    "rightYAxis" 4
+    "leftTrigger" 5 isTrigger=true
+    "rightTrigger" 6 isTrigger=true
+}
+button {
+    "buttonA" 6
+    "buttonB" 7
+    "buttonX" 8
+    "buttonY" 5
+    "leftBumper" 9
+    "rightBumper" 10
+    "leftTrigger" 11
+    "rightTrigger" 12
+    "start" 16
+    "back" 15
+    "leftStickClick" 13
+    "rightStickClick" 14
+    "dPadUp" 1
+    "dPadDown" 2
+    "dPadLeft" 3
+    "dPadRight" 4
+}

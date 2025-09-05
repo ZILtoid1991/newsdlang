@@ -1,0 +1,112 @@
+/*
+ * Sample configuration file
+ */
+
+// Value #0: Application name
+// Value #1: Application version
+configurationFile "PixelPerfectEditor" "null"
+
+/*
+ * Audio settings.
+ */
+audio {
+    soundVol 100        //Sound volume (0-100)
+    musicVol 100        //Music volume (0-100)
+    driver null         //Name of the audio driver, null for auto
+    device null         //Name of the audio device, null for auto
+    frequency 48000     //Playback frequency (should be either 44100 or 48000)
+    bufferLen 1024      //Length of the buffer (must be power of two)
+    frameLen 512        //Length of an audio frame (must be less or equal than buffer, and power of two)
+}
+ /*
+  * Graphics settings.
+  */
+video {
+    driver "openGL"     //Name of API for rendering, currently ignored, later can specify openGL, vulkan, directX, and metal
+    shaderVers null     //Selects shader version, default is "330" or "300es"
+    screenMode "windowed" //Default screen mode
+    resolution null     //Set to "null" if not applicable, otherwise format is "[width]x[height]@[frequency]"
+    graphicsScaling 2   //Initial graphics scaling if no override used
+    rasterSize 848 480  //Initial raster size if no override used
+}
+/*
+ * Input settings.
+ */
+input {
+    /*
+     * device:
+     * type: Possible values: "keyboard", "joystick", "mouse", "touchscreen"(unimplemented)
+     * name: Name of the device, might be absent.
+     * devNum: Device ID.
+     */
+    device name="Keyboard" type="keyboard" devNum=0 {
+        /*
+         * Anonymous tags here are treated as keybindings.
+         * Value #0: ID, usually a readable one.
+         * name: The name of the key from the appropriate naming file.
+         * code: If namings are unavailable, then this will be used, has a higher
+         * priority than keyName
+         * keyMod: In case of keyboards, it's the modifier keys used for various key
+         * combinations. In case of joysticks, it determines whether it's a button,
+         * DPad, or an axis.
+         * keyModIgnore: Determines what modifier keys should it ignore.
+         * deadZone0: Axis deadzone prelimiter 1.
+         * deadZone1: Axis deadzone prelimiter 2.
+         * axisAsButton: Makes the axis to act like a button if within deadzone.
+         */
+        "copy" name="c" keyMod="Ctrl" keyModIgnore="NumLock;CapsLock"
+        "cut" name="x" keyMod="Ctrl" keyModIgnore="NumLock;CapsLock"
+        "paste" name="v" keyMod="Ctrl" keyModIgnore="NumLock;CapsLock"
+        "undo" name="z" keyMod="Ctrl" keyModIgnore="NumLock;CapsLock"
+        "redo" name="z" keyMod="Ctrl;Shift" keyModIgnore="NumLock;CapsLock"
+        "save" name="s" keyMod="Ctrl" keyModIgnore="NumLock;CapsLock"
+        "saveAs" name="a" keyMod="Ctrl;Shift" keyModIgnore="NumLock;CapsLock"
+        "selFlipHoriz" name="j" keyModIgnore="NumLock;CapsLock"
+        "selFlipVert" name="k" keyModIgnore="NumLock;CapsLock"
+        "selMirrorHoriz" name="j" keyMod="Shift" keyModIgnore="NumLock;CapsLock"
+        "selMirrorVert" name="k" keyMod="Shift" keyModIgnore="NumLock;CapsLock"
+        "insert" name="insert" keyModIgnore="NumLock;CapsLock"
+        "delArea" name="delete" keyModIgnore="NumLock;CapsLock"
+        "palUp" name="npPlus" keyModIgnore="NumLock;CapsLock"
+        "palDown" name="npMinus" keyModIgnore="NumLock;CapsLock"
+        "hMirror" name="npMultiply" keyModIgnore="NumLock;CapsLock"
+        "vMirror" name="npDivide" keyModIgnore="NumLock;CapsLock"
+        "place" name="npEnter" keyModIgnore="NumLock;CapsLock"
+        "nextTile" name="np9" keyModIgnore="NumLock;CapsLock"
+        "prevTile" name="np3" keyModIgnore="NumLock;CapsLock"
+        "moveUp" name="np8" keyModIgnore="NumLock;CapsLock"
+        "moveDown" name="np2" keyModIgnore="NumLock;CapsLock"
+        "moveLeft" name="np4" keyModIgnore="NumLock;CapsLock"
+        "moveRight" name="np6" keyModIgnore="NumLock;CapsLock"
+        "scrollUp" name="up" keyModIgnore="NumLock;CapsLock"
+        "scrollDown" name="down" keyModIgnore="NumLock;CapsLock"
+        "scrollLeft" name="left" keyModIgnore="NumLock;CapsLock"
+        "scrollRight" name="right" keyModIgnore="NumLock;CapsLock"
+        "nextLayer" name="pageUp" keyModIgnore="NumLock;CapsLock"
+        "prevLayer" name="pageDown" keyModIgnore="NumLock;CapsLock"
+        "hideLayer" name="home" keyModIgnore="NumLock;CapsLock"
+        "soloLayer" name="end" keyModIgnore="NumLock;CapsLock"
+        "modeSel" name="f4" keyModIgnore="NumLock;CapsLock"
+        "modeTile" name="f3" keyModIgnore="NumLock;CapsLock"
+        "modeObj" name="f2" keyModIgnore="NumLock;CapsLock"
+        "modeSprt" name="f1" keyModIgnore="NumLock;CapsLock"
+        "resetLayers" name="f9" keyMod="Shift" keyModIgnore="NumLock;CapsLock"
+        /*
+         * Other tags:
+         *
+         * enableForceFeedback: enables or disables Force Feedback if available on
+         * the device.
+         * Value #0: Boolean (true or false) or float (0.0 - 1.0, equals to the strenght of force feedback effects)
+         */
+    }
+}
+/*
+ * Localization setting (country code, then language code)
+ */
+local "US" "en"
+/*
+ * Game settings, etc.
+ */
+etc {
+
+}
