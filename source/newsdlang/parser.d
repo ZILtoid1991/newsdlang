@@ -1110,6 +1110,10 @@ ubyte[8] detectAndParseNumericType(string input, ref long[8] parseOut) nothrow
             {
                 isNegative = true;
             }
+            else if (input[i] == 'D')
+            {
+                result[0] = DLValueType.SDLDouble;
+            }
             else if (input[i] == 'U')
             {   //Value might be either SDL uint or ulong
                 if (i + 2 == input.length)
@@ -1206,6 +1210,10 @@ unittest
     parseOut = [0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L];
     frmt = detectAndParseNumericType("65_536.00_01", parseOut);
     assert(frmt[0] == DLValueType.Float && frmt[4] == 3 && frmt[2] == 2, frmt.to!string);
+
+    parseOut = [0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L];
+    frmt = detectAndParseNumericType("65.0536D", parseOut);
+    assert(frmt[0] == DLValueType.SDLDouble);
 
     parseOut = [0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L];
     frmt = detectAndParseNumericType("0x65_536", parseOut);
