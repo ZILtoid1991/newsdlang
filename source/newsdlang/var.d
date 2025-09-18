@@ -93,6 +93,47 @@ struct DLVar
         this.format0 = format0;
         this.format1 = format1;
     }
+    this(T)(T val) @nogc nothrow pure
+    {
+        static if (isIntegral!T)
+        {
+            accessor.i = val;
+            _type = DLValueType.Integer;
+            style = DLNumberStyle.Decimal;
+        }
+        else static if (isFloatingPoint!T)
+        {
+            accessor.fl = val;
+            _type = DLValueType.Float;
+            style = DLNumberStyle.Decimal;
+        }
+        else static if (is(T == string))
+        {
+            str = val;
+            _type = DLValueType.String;
+            style = DLStringType.Quote;
+        }
+        else static if (is(T == ubyte[]))
+        {
+            bin = val;
+            _type = DLValueType.Binary;
+        }
+        else static if (is(T == bool))
+        {
+            accessor.i = val ? 1 : 0;
+            _type = DLValueType.Boolean;
+            style = DLBooleanStyle.TrueFalse;
+        }
+        else static if (is(T == DLDateTime))
+        {
+            accessor.date = val;
+            if (val.timeOnly) _type = DLValueType.Time;
+            else if (val.hasTime) _type = DLValueType.DateTime;
+            else _type = DLValueType.Date;
+        }
+        else static assert(0,
+                "Value type not supported directly, use serialization techniques for classes, structs, etc.!");
+    }
     /// Returns the value held by this DLVar as given type if possible, throws 
     /// `ValueTypeException` if type is mismatched.
     T get(T)()
@@ -169,25 +210,25 @@ struct DLVar
             case DLNumberStyle.Binary:
                 if (format0)
                 {
-                    return format("0b%,*_b", format0, accessor.i);
+                    return format("0b%,*?b", format0, '_', accessor.i);
                 }
                 return format("0b%b", accessor.i);
             case DLNumberStyle.Octal:
                 if (format0)
                 {
-                    return format("0o%,*_o", format0, accessor.i);
+                    return format("0o%,*?o", format0, '_', accessor.i);
                 }
                 return format("0o%o", accessor.i);
             case DLNumberStyle.Hexadecimal:
-                // if (format0)
-                // {
-                //     return format("0x%,*,X", format0, accessor.i);
-                // }
+                if (format0)
+                {
+                    return format("0x%,*?X", format0, '_', accessor.i);
+                }
                 return format("0x%X", accessor.i);
             default:
                 if (format0)
                 {
-                    return format("%,*_d", format0, accessor.i);
+                    return format("%,*?d", format0, '_', accessor.i);
                 }
                 return format("%d", accessor.i);
             }
@@ -201,7 +242,7 @@ struct DLVar
             default:
                 if (format0)
                 {
-                    return format("%,*_f", format0, accessor.fl);
+                    return format("%,*?f", format0, '_', accessor.fl);
                 }
                 return format("%f", accessor.fl);
             }
@@ -218,12 +259,10 @@ struct DLVar
                 return CharTokens.Backtick ~ str ~ CharTokens.Backtick;
             case DLStringType.Scope:
                 return Tokens.StringScopeBegin ~ str ~ Tokens.StringScopeEnd;
-            case DLStringType.Quote:
-                return CharTokens.Quote ~ insertEscapeChars(str) ~ CharTokens.Quote;
             case DLStringType.Apostrophe:
                 return CharTokens.Apostrophe ~ insertEscapeChars(str) ~ CharTokens.Apostrophe;
-            default:
-                break;
+            default: //case DLStringType.Quote:
+                return CharTokens.Quote ~ insertEscapeChars(str) ~ CharTokens.Quote;
             }
             break;
         default:
@@ -234,7 +273,7 @@ struct DLVar
     }
     bool opEquals(DLVar rhs) @safe @nogc pure nothrow const
     {
-        if (this._type != rhs.type) return false;
+        if (this._type != rhs._type) return false;
         final switch (_type) with (DLValueType)
         {
             case init: return false;
@@ -259,8 +298,20 @@ struct DLVar
     /// Returns the typeID of this DLVar value.
     DLValueType type() const @nogc nothrow pure
     {
-        return cast(DLValueType)type;
+        return cast(DLValueType)_type;
     }
+}
+unittest
+{
+    assert(DLVar(123_456_789, DLValueType.Integer, DLNumberStyle.Decimal, 3).toDLString == "123_456_789");
+    assert(DLVar(0x1234_5678, DLValueType.Integer, DLNumberStyle.Hexadecimal, 4).toDLString == "0x1234_5678");
+
+    assert(DLVar(123_456_789) == DLVar(123_456_789));
+
+    assert(DLVar(123_456_789).type == DLValueType.Integer);
+    assert(DLVar(123.456).type == DLValueType.Float);
+
+    //assert(DLVar(123_456_789.0, DLValueType.Float, DLNumberStyle.Decimal, 3).toDLString == "123_456_789");
 }
 /**
  * Stores ISO date and time information in an easy to understand structure.

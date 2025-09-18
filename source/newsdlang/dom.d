@@ -872,6 +872,14 @@ public class DLValue : DLElement
     {
         return _data.toDLString();
     }
+    public override bool opEquals(Object rhs)
+    {
+        DLValue rhs1 = cast(DLValue)rhs;
+        if (rhs1 !is null) {
+            return _data == rhs1._data;
+        }
+        return false;
+    }
     /** 
      * Gets type of T from value if type is matching, throws ValueTypeException if types are mismatched.
      */
@@ -988,7 +996,8 @@ public class DLComment : DLElement
     }
 }
 
-unittest {
+unittest
+{
     import std.stdio;
     DLDocument doc = new DLDocument([
         (new DLTag("foo", null, [new DLValue("bar"), new DLValue(513)])),
@@ -1001,7 +1010,8 @@ unittest {
     writeln(doc.writeDOM());
 }
 
-unittest {
+unittest
+{
     import std.stdio;
     string sdlangString = q"{
         foo "bar" 513
@@ -1020,7 +1030,8 @@ unittest {
 }
 
 
-unittest {
+unittest
+{
     string sdlangString = q"{
         magyar "árvíztűrő tükörfúrógép ÁRVÍZTŰRŐ TÜKÖRFÚRÓGÉP"
         日本語 "こにちわ世界"
@@ -1031,6 +1042,15 @@ unittest {
                 writeln("Helló világ!");
             }
         }"
+    }";
+    DLDocument doc = readDOM(sdlangString);
+}
+
+
+unittest
+{
+    string sdlangString = q"{
+        SDLangDouble 0.384D
     }";
     DLDocument doc = readDOM(sdlangString);
 }
