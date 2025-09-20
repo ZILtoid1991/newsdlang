@@ -422,7 +422,7 @@ unittest {
     assert(testParser.isComment() == DLCommentType.init);
     assert(testParser.isNumericValue());
     varoutput = testParser.parseVariable();
-    assert(varoutput.get!double == 8640.84);
+    assert(varoutput.get!double == 8640.84, varoutput.toDLString);
     assert(testParser.isClosingOfTag());
     testParser.consumeAnyWhitespace();
     assert(testParser.isScopeEnd());
@@ -701,9 +701,10 @@ int lookupHexDigit(char c) @nogc nothrow
  *   [6]: Unused
  *   [7]: Digit counter for floating point numbers' fraction
  */
-ubyte[8] detectAndParseNumericType(string input, ref long[8] parseOut) nothrow
+ubyte[8] detectAndParseNumericType(string input, out long[8] parseOut) nothrow
 {
     ubyte[8] result;
+    long overflowDetection;
     switch (input.length) 
     {
     case 9:     //Potential ISO Time
@@ -1078,8 +1079,16 @@ ubyte[8] detectAndParseNumericType(string input, ref long[8] parseOut) nothrow
         {
             if (isNumber(input[i]))
             {
-                parseOut[0] *= 10;
-                parseOut[0] += input[i] - '0';
+                overflowDetection *= 10;
+                overflowDetection += input[i] - '0';
+                if (overflowDetection < 0) //Overflow happened
+                {
+                    return result;
+                }
+                else
+                {
+                    parseOut[0] = overflowDetection;
+                }
                 result[2]++;
                 result[7]++;
             }
@@ -1100,6 +1109,7 @@ ubyte[8] detectAndParseNumericType(string input, ref long[8] parseOut) nothrow
                     result[7] = 0;
                     parseOut[1] = parseOut[0];
                     parseOut[0] = 0L;
+                    overflowDetection = 0L;
                 }
                 else
                 {
@@ -1171,7 +1181,7 @@ ubyte[8] detectAndParseNumericType(string input, ref long[8] parseOut) nothrow
 }
 unittest
 {
-    import std.conv;
+    import std.conv; import std.stdio;
     long[8] parseOut;
     ubyte[8] frmt;
     assert(detectAndParseNumericType("0", parseOut)[0] == DLValueType.Integer);
@@ -1259,6 +1269,10 @@ unittest
     frmt = detectAndParseNumericType("2024-12-15T12:34:09.256+01:00", parseOut);
     assert(parseOut[0] == 2024 && parseOut[1] == 12 && parseOut[2] == 15 && parseOut[3] == 12 && parseOut[4] == 34 &&
             parseOut[5] == 9 && parseOut[6] == 256 && parseOut[7] == 60, parseOut.to!string);
+
+    //Test for floating point numbers
+    //frmt = detectAndParseNumericType("0.48000000000000000000048", parseOut);
+    //writeln(frmt, parseOut);
 }
 /// Removes excess whitespace in front of multiline comments
 string removeExcessWhitespace(string input) 

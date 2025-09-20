@@ -1051,6 +1051,21 @@ unittest
 {
     string sdlangString = q"{
         SDLangDouble 0.384D
+        Numbertest00 0.0048D
+        Numbertest01 0.00000048D
+        Numbertest02 0.000000000048D
+        Numbertest03 0.000000000000000000048D
+        Numbertest04 0.48000000000000000000048D
+        Numbertest08 0.3030000030994415283203125D
     }";
     DLDocument doc = readDOM(sdlangString);
+    assert(doc.searchTag("SDLangDouble").values[0].get!double == 0.384);
+    assert(doc.searchTag("Numbertest00").values[0].get!double == 0.0048);
+    assert(doc.searchTag("Numbertest01").values[0].get!double == 0.00000048);
+    assert(doc.searchTag("Numbertest02").values[0].get!double == 0.000000000048);
+    assert(doc.searchTag("Numbertest03").values[0].get!double == 0.000000000000000000048);
+    assert(doc.searchTag("Numbertest04").values[0].get!double == 0.48000000000000000000048,
+            doc.searchTag("Numbertest04").values[0].get().toDLString());
+    assert(doc.searchTag("Numbertest08").values[0].get!double == 0.3030000030994415283203125,
+            doc.searchTag("Numbertest08").values[0].get().toDLString());
 }
