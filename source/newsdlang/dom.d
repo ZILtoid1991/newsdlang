@@ -494,7 +494,7 @@ public class DLTag : DLElement
             return child;
         case DLElementType.Attribute:
             insertAtLastDirectChild(child);
-            //_attributes ~= cast(DLAttribute)child;
+            _attributes ~= cast(DLAttribute)child;
             break;
         case DLElementType.Comment:
             DLComment cmnt = cast(DLComment)child;
@@ -1025,6 +1025,7 @@ unittest
     assert(doc.tags()[0].fullname == "foo", doc.tags()[0].fullname);
     assert(doc.tags()[0].values()[0].get!string == "bar");
     assert(doc.tags()[0].values()[1].get!long == 513);
+    assert(doc.searchTag("bar").searchAttribute!int("attr", 0) == 3);
 
     writeln(doc.writeDOM());
 }
