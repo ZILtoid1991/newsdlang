@@ -74,7 +74,7 @@ public DLDocument readDOM(string domSource)
             {
             case DLCommentType.Asterisk, DLCommentType.Plus:
                 currTag ~= new DLComment(cmnt[2..$-2], cmntTy,
-                        currTag || tagName ? DLCommentStyle.Inline : DLCommentStyle.Block);
+                        currTag.length || tagName ? DLCommentStyle.Inline : DLCommentStyle.Block);
                 break;
             case DLCommentType.Hash:
                 currTag ~= new DLComment(cmnt[1..$], cmntTy,
@@ -196,7 +196,8 @@ public abstract class DLElement
     /**
      * Returns the type of this element.
      */
-    public final DLElementType type() const @nogc pure nothrow {
+    public final DLElementType type() const @nogc pure nothrow
+    {
         return _type;
     }
     /**
@@ -241,7 +242,7 @@ public abstract class DLElement
     /**
      * Adds a range of *DL elements. Throws if child elements not supported.
      */
-    public void add(DLElement[] children)
+    public void add(T)(T[] children)
     {
         foreach (child ; children)
         {
@@ -458,7 +459,9 @@ public class DLTag : DLElement
         size_t pos;
         for ( ; pos < _allChildElements.length ; pos++)
         {
-            if (_allChildElements[pos]._type == DLElementType.Tag) break;
+            if (_allChildElements[pos]._type == DLElementType.Tag ||
+                    (_allChildElements[pos]._type == DLElementType.Comment &&
+                    _allChildElements[pos]._field2 == DLCommentStyle.Block)) break;
             _allChildElements[pos].toDLString(indentation, endOfLine, output, indentLevel);
         }
         if (pos < _allChildElements.length)
@@ -469,6 +472,10 @@ public class DLTag : DLElement
             for ( ; pos < _allChildElements.length ; pos++)
             {
                 _allChildElements[pos].toDLString(indentation, endOfLine, output, indentLevel + 1);
+            }
+            for (int i ; i < indentLevel ; i++)
+            {
+                output ~= indentation;
             }
             output ~= CharTokens.ScopeEnd;
         }
@@ -528,13 +535,7 @@ public class DLTag : DLElement
 
         return child;
     }
-    /**
-     * Adds a range of *DL elements. Throws if child elements not supported.
-     */
-    public override void add(DLElement[] children)
-    {
-        super.add(children);
-    }
+    alias add = newsdlang.dom.DLElement.add;
     /**
      * Removes the supplied element from this, and returns it if could be removed. Returns
      * null if it wasn't found among its children. Throws if child elements not supported.
@@ -706,14 +707,16 @@ public class DLAttribute : DLElement
         this._name = _name;
         this._value = _value;
     }
-    public this(string _name, string _namespace, long data, DLNumberStyle style = DLNumberStyle.Decimal, ubyte numberingFrmt = 0)
+    public this(string _name, string _namespace, long data, DLNumberStyle style = DLNumberStyle.Decimal,
+            ubyte numberingFrmt = 0)
     {
         this._type = DLElementType.Attribute;
         this._namespace = _namespace;
         this._name = _name;
         this._value = DLVar(data, DLValueType.Integer, style, numberingFrmt, numberingFrmt);
     }
-    public this(string _name, string _namespace, double data, DLNumberStyle style = DLNumberStyle.Decimal, ubyte numberingFrmt = 0)
+    public this(string _name, string _namespace, double data, DLNumberStyle style = DLNumberStyle.Decimal,
+            ubyte numberingFrmt = 0)
     {
         this._type = DLElementType.Attribute;
         this._namespace = _namespace;
@@ -962,16 +965,16 @@ public class DLComment : DLElement
             switch (_commentType) 
             {
             case DLCommentType.Asterisk:
-                output ~= Tokens.CommentBlockBegin ~ content ~ Tokens.CommentBlockEnd ~ endOfLine;
+                output ~= Tokens.CommentBlockBegin ~ content ~ Tokens.CommentBlockEnd;
                 break;
             case DLCommentType.Plus:
-                output ~= Tokens.CommentBlockBeginS ~ content ~ Tokens.CommentBlockEndS ~ endOfLine;
+                output ~= Tokens.CommentBlockBeginS ~ content ~ Tokens.CommentBlockEndS;
                 break;
             case DLCommentType.Hash:
-                output ~= Tokens.SingleLineCommentH ~ content ~ endOfLine;
+                output ~= Tokens.SingleLineCommentH ~ content;
                 break;
             case DLCommentType.Slash:
-                output ~= Tokens.SingleLineComment ~ content ~ endOfLine;
+                output ~= Tokens.SingleLineComment ~ content;
                 break;
             default:
                 break;
@@ -992,6 +995,10 @@ public class DLComment : DLElement
             goto case DLCommentStyle.LineEnd;
         default:
             break;
+        }
+        if (_commentStyle == DLCommentStyle.Block)
+        {
+            output ~= endOfLine;
         }
     }
 }
@@ -1016,7 +1023,10 @@ unittest
     string sdlangString = q"{
         foo "bar" 513
         bar `baz` 0x56_4F attr=3 {
+            /* Block comment to check for issues with standalone comments in scopes */
             baz 8640.84             //Comment for testing purposes
+            /* Second block comment */
+            /+ Comment before a tag's body +/ tagWithCommentBeforeIt 86460
         }
         someTag "\"string\" with multiple spaces" /* Inlined comment */ 8419
     }";

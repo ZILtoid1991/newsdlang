@@ -13,3 +13,13 @@ See XDL specifications in file XDLspecs.md
 * DOM and its related API will likely stay the same, but with more features added and things refined.
 * XDL specifications are not 100% finalized, and some features might get added/modified.
 * It has a mostly working DOM reader and writer in `newsdlang.dom`, and a more manual streaming parser in `newsdlang.parser` if someone wants to directly convert *DL files to data without the DOM overhead.
+
+## Known issues
+
+### Severe
+
+* Floating-point number parsing is unstable, with some very long floats causing issues stemming from limited precision, especially of the 64 bit integers being used during the parsing process. Some mitigations have been done, but more needs to be done in the future.
+
+### Low priority
+
+* Comments put in front of a tag are positioned incorrectly.
