@@ -353,7 +353,13 @@ public class DLTag : DLElement
     public T searchAttribute(T)(string fullname, T defaultVal)
     {
         DLAttribute a = searchAttribute(fullname);
-        if (a) return a.get!T;
+        if (a)
+        {
+            if (a.isTypeOf!T)
+            {
+                return a.get!T;
+            }
+        }
         return defaultVal;
     }
     /// Searches for the tag by `fullname`, returns the first one if found, or returns null if not.
@@ -376,13 +382,24 @@ public class DLTag : DLElement
         DLTag t = searchTag(path[0]);
         if (t !is null)
         {
-            if (path.length >= 1)
+            if (path.length >= 2)
             {
                 return t.searchTag(path[1..$]);
             }
             return t;
         }
         return null;
+    }
+    public T searchValue(T)(T defaultVal) nothrow pure
+    {
+        foreach (DLValue v ; _values)
+        {
+            if (v.isTypeOf!T)
+            {
+                return v.get!T;
+            }
+        }
+        return T.init;
     }
     /**
      * Searches for the tag specified by the path. Throws an exception if not found
@@ -393,13 +410,9 @@ public class DLTag : DLElement
      */
     public DLTag searchTagX(string[] path) pure
     {
-        DLTag t = searchTag(path[0]);
+        DLTag t = searchTag(path);
         if (t !is null)
         {
-            if (path.length >= 1)
-            {
-                return t.searchTag(path[1..$]);
-            }
             return t;
         }
         throw new DLDOMException("Tag not found!");
@@ -816,6 +829,11 @@ public class DLAttribute : DLElement
     {
         return _value.type;
     }
+    ///Returns true if the type held by this type is or closely related to T
+    public bool isTypeOf(T)() const @nogc nothrow pure
+    {
+        return _value.isTypeOf!T;
+    }
 }
 /**
  * Represents a value that can be assigned to a *DL tag.
@@ -917,6 +935,11 @@ public class DLValue : DLElement
     public DLValueType type() const @nogc nothrow pure
     {
         return _data.type;
+    }
+    ///Returns true if the type held by this type is or closely related to T
+    public bool isTypeOf(T)() const @nogc nothrow pure
+    {
+        return _data.isTypeOf!T;
     }
 }
 /**
@@ -1036,6 +1059,7 @@ unittest
     assert(doc.tags()[0].values()[0].get!string == "bar");
     assert(doc.tags()[0].values()[1].get!long == 513);
     assert(doc.searchTag("bar").searchAttribute!int("attr", 0) == 3);
+    assert(doc.searchTag(["bar", "baz"]));
 
     writeln(doc.writeDOM());
 }

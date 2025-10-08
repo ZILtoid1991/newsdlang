@@ -181,15 +181,56 @@ struct DLVar
                 return accessor.date;
             }
         }
-        // else static if (is(T == TimeOfDay))
-        // {
-        //     if (type == DLValueType.Time)
-        //     {
-        //         return accessor.time;
-        //     }
-        // }
         else static assert(0, "Value type not supported directly, use serialization techniques for classes, structs, etc.!");
         throw new ValueTypeException("Value type mismatch!");
+    }
+    ///Returns true if the type held by this type is or closely related to T
+    bool isTypeOf(T)() const @nogc nothrow pure
+    {
+        static if (isIntegral!T)
+        {
+            if (_type == DLValueType.Integer || _type == DLValueType.SDLInt || _type == DLValueType.SDLUint ||
+                    _type == DLValueType.SDLLong || _type == DLValueType.SDLUlong || _type == DLValueType.Null)
+            {
+                return true;
+            }
+        }
+        else static if (isFloatingPoint!T)
+        {
+            if (_type == DLValueType.Float || _type == DLValueType.SDLFloat || _type == DLValueType.SDLDouble)
+            {
+                return true;
+            }
+        }
+        else static if (is(T == string))
+        {
+            if (_type == DLValueType.String)
+            {
+                return true;
+            }
+        }
+        else static if (is(T == ubyte[]))
+        {
+            if (_type == DLValueType.Binary)
+            {
+                return true;
+            }
+        }
+        else static if (is(T == bool))
+        {
+            if (_type == DLValueType.Boolean)
+            {
+                return true;
+            }
+        }
+        else static if (is(T == DLDateTime))
+        {
+            if (_type == DLValueType.DateTime || _type == DLValueType.Date)
+            {
+                return true;
+            }
+        }
+        return false;
     }
     /// Converts data to *DL string.
     string toDLString() const
