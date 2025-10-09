@@ -390,6 +390,9 @@ public class DLTag : DLElement
         }
         return null;
     }
+    /**
+     * Searches the type of value indicated by `T`, then returns it if found, or returns `defaultVal` if not found.
+     */
     public T searchValue(T)(T defaultVal) nothrow pure
     {
         foreach (DLValue v ; _values)
@@ -400,6 +403,20 @@ public class DLTag : DLElement
             }
         }
         return T.init;
+    }
+    /**
+     * Searches the type of value indicated by `T`, then returns it if found, or throws a `ValueTypeException` if not found.
+     */
+    public T searchValueX(T)() pure
+    {
+        foreach (DLValue v ; _values)
+        {
+            if (v.isTypeOf!T)
+            {
+                return v.get!T;
+            }
+        }
+        throw new ValueTypeException("Value type not found");
     }
     /**
      * Searches for the tag specified by the path. Throws an exception if not found
