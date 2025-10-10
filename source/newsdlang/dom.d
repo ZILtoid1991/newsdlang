@@ -5,7 +5,7 @@ public import newsdlang.enums;
 public import newsdlang.var;
 import newsdlang.etc;
 import core.stdc.stdlib;
-import std.exception : enforce;
+import std.exception : enforce, assertThrown;
 import std.algorithm.searching : countUntil;
 
 @safe:
@@ -317,6 +317,10 @@ public class DLTag : DLElement
         _type = DLElementType.Tag;
         this._name = _name;
         this._namespace = _namespace;
+        if (_namespace.length && !_name.length)
+        {
+            throw new DLDOMException("Name cannot be null if namespace is specified.");
+        }
         _namespaces ~= NamespaceAccess(null, null);
         add(children);
     }
@@ -399,7 +403,14 @@ public class DLTag : DLElement
         {
             if (v.isTypeOf!T)
             {
-                return v.get!T;
+                try
+                {
+                    return v.get!T;
+                }
+                catch (Exception e)
+                {
+
+                }
             }
         }
         return T.init;
@@ -1077,6 +1088,10 @@ unittest
     assert(doc.tags()[0].values()[1].get!long == 513);
     assert(doc.searchTag("bar").searchAttribute!int("attr", 0) == 3);
     assert(doc.searchTag(["bar", "baz"]));
+    assertThrown!DLDOMException(doc.searchTagX(["bar", "nonexistentTag"]));
+    assert(doc.searchTag("foo").searchValue!string(null) == "bar");
+    assert(doc.searchTag("bar").searchValueX!int == 0x56_4F);
+    assertThrown!ValueTypeException(doc.searchTag("bar").searchValueX!bool);
 
     writeln(doc.writeDOM());
 }
