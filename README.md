@@ -1,3 +1,5 @@
+**Notice: Project moved to the following link:** https://codeberg.org/ZILtoid1991/newsdlang
+
 # newsdlang
 SDLang/XDL reader and writer
 
